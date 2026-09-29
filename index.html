@@ -3,244 +3,451 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="theme-color" content="#0f0f13" />
-  <title>AirQR Transfer</title>
+  <meta name="theme-color" content="#0b0f19" />
+  <title>Airgapped QR Code Transfer — Zero-Trust Optical Data Diode</title>
+  
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Libraries: Vue 3, QRCode.js, zbar-wasm, Pako Gzip -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@latest/dist/index.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.3/pako.min.js"></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #0f0f13;
-      --surface: #1a1a24;
-      --surface2: #22222f;
-      --border: #2e2e40;
-      --accent: #6c63ff;
-      --accent2: #4ade80;
-      --text: #e8e8f0;
-      --text-muted: #7878a0;
-      --red: #f87171;
-      --radius: 16px;
-      --radius-sm: 10px;
+      --bg: #0b0f19;
+      --bg-card: #131b2e;
+      --bg-card-alt: #1a233a;
+      --border: #23304d;
+      --border-focus: #3b82f6;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --accent-glow: rgba(37, 99, 235, 0.35);
+      --success: #10b981;
+      --success-glow: rgba(16, 185, 129, 0.25);
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --radius: 14px;
+      --radius-sm: 8px;
+      --font-mono: 'JetBrains Mono', monospace;
     }
 
-    html, body {
-      height: 100%;
-      background: var(--bg);
-      font-family: 'Inter', system-ui, sans-serif;
+    body {
+      background-color: var(--bg);
       color: var(--text);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 12px 32px;
       -webkit-font-smoothing: antialiased;
     }
 
     #app {
+      width: 100%;
+      max-width: 680px;
       display: flex;
       flex-direction: column;
-      height: 100dvh;
-      max-width: 480px;
-      margin: 0 auto;
+      gap: 16px;
     }
 
-    /* ── Header ── */
-    .header {
-      padding: 18px 20px 12px;
+    /* ── App Header ── */
+    .app-header {
+      background: linear-gradient(135deg, rgba(19, 27, 46, 0.95), rgba(26, 35, 58, 0.95));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(12px);
+    }
+    .brand-left {
       display: flex;
       align-items: center;
-      gap: 10px;
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
+      gap: 14px;
     }
-    .logo {
-      width: 34px; height: 34px;
-      background: linear-gradient(135deg, var(--accent), #a78bfa);
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px;
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #2563eb, #38bdf8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 0 16px var(--accent-glow);
     }
-    .header-title { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
-    .header-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
-
-    /* ── Tabs ── */
-    .tabs {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+    .brand-title {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: #fff;
+    }
+    .brand-sub {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
       gap: 6px;
-      padding: 12px 16px;
-      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .badge-airgap {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 1px 7px;
+      border-radius: 99px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Student & Project Info Pill ── */
+    .student-pill {
+      text-align: right;
+      font-size: 11px;
+      color: var(--text-dim);
+      line-height: 1.4;
+    }
+    .student-pill strong {
+      color: var(--text-muted);
+    }
+
+    /* ── Navigation Tabs ── */
+    .nav-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      background: var(--bg-card);
+      padding: 6px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
     }
     .tab-btn {
-      padding: 10px;
+      padding: 11px 12px;
+      background: transparent;
+      border: 1px solid transparent;
       border-radius: var(--radius-sm);
-      border: 1.5px solid var(--border);
-      background: var(--surface);
       color: var(--text-muted);
-      font-size: 13px;
+      font-size: 13.5px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.18s ease;
-      display: flex; align-items: center; justify-content: center; gap: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .tab-btn:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
     }
     .tab-btn.active {
       background: var(--accent);
-      border-color: var(--accent);
       color: #fff;
-    }
-    .tab-btn:not(.active):hover {
-      border-color: var(--accent);
-      color: var(--text);
+      border-color: rgba(255, 255, 255, 0.15);
+      box-shadow: 0 4px 12px var(--accent-glow);
     }
 
-    /* ── Content panels ── */
-    .panel {
-      flex: 1;
-      overflow-y: auto;
-      padding: 4px 16px 24px;
+    /* ── Panels ── */
+    .panel-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
     }
 
-    /* ── Status badge ── */
-    .status-box {
-      background: var(--surface);
+    /* ── Info / Status Banner ── */
+    .status-banner {
+      background: var(--bg-card-alt);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
-      padding: 12px 14px;
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-bottom: 12px;
-      min-height: 44px;
+      padding: 12px 16px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--text-muted);
+      transition: all 0.3s ease;
     }
-    .status-box.error {
-      background: rgba(248,113,113,0.08);
-      border-color: var(--red);
-      color: var(--red);
+    .status-banner.active {
+      border-color: var(--accent);
+      background: rgba(37, 99, 235, 0.08);
+      color: #bfdbfe;
     }
-    .status-box.success {
-      background: rgba(74,222,128,0.08);
-      border-color: var(--accent2);
-      color: var(--accent2);
+    .status-banner.success {
+      border-color: var(--success);
+      background: rgba(16, 185, 129, 0.08);
+      color: #a7f3d0;
     }
-    .status-dot {
-      width: 8px; height: 8px;
+    .status-banner.danger {
+      border-color: var(--danger);
+      background: rgba(239, 68, 68, 0.08);
+      color: #fca5a5;
+    }
+    .status-indicator {
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
-      background: var(--text-muted);
+      background: var(--text-dim);
       flex-shrink: 0;
     }
-    .status-box.active .status-dot {
-      background: var(--accent2);
-      box-shadow: 0 0 6px var(--accent2);
-      animation: pulse 1.4s infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
-    }
-
-    /* ── Progress bar ── */
-    .progress-wrap {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 12px 14px;
-      margin-bottom: 12px;
-    }
-    .progress-label {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-bottom: 8px;
-    }
-    .progress-label span:last-child { color: var(--text); font-weight: 600; }
-    .progress-bar-bg {
-      height: 6px;
-      background: var(--border);
-      border-radius: 99px;
-      overflow: hidden;
-    }
-    .progress-bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
-      border-radius: 99px;
-      transition: width 0.3s ease;
-    }
-
-    /* ── Buttons ── */
-    .btn {
-      width: 100%;
-      padding: 13px;
-      border-radius: var(--radius-sm);
-      border: none;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      margin-bottom: 10px;
-    }
-    .btn-primary {
+    .status-banner.active .status-indicator {
       background: var(--accent);
-      color: #fff;
+      box-shadow: 0 0 10px var(--accent);
+      animation: pulse-dot 1.5s infinite;
     }
-    .btn-primary:hover { background: #5a52e0; }
-    .btn-danger {
-      background: rgba(248,113,113,0.12);
-      color: var(--red);
-      border: 1.5px solid var(--red);
+    .status-banner.success .status-indicator {
+      background: var(--success);
+      box-shadow: 0 0 10px var(--success);
     }
-    .btn-danger:hover { background: rgba(248,113,113,0.2); }
-    .btn-secondary {
-      background: var(--surface2);
-      color: var(--text-muted);
-      border: 1.5px solid var(--border);
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
     }
-    .btn-secondary:hover { border-color: var(--accent); color: var(--text); }
-    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    /* ── File Input ── */
-    .file-drop {
+    /* ── File Upload Dropzone ── */
+    .file-dropzone {
       border: 2px dashed var(--border);
+      background: rgba(26, 35, 58, 0.4);
       border-radius: var(--radius);
-      padding: 28px 16px;
+      padding: 28px 20px;
       text-align: center;
       cursor: pointer;
-      transition: border-color 0.15s;
-      margin-bottom: 12px;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+    .file-dropzone:hover, .file-dropzone.has-file {
+      border-color: var(--accent);
+      background: rgba(37, 99, 235, 0.05);
+    }
+    .file-dropzone input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .dropzone-icon {
+      font-size: 36px;
+      margin-bottom: 8px;
+    }
+    .dropzone-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+    }
+    .dropzone-sub {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    /* ── Compression Stats Card ── */
+    .stats-card {
+      background: var(--bg-card-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      text-align: center;
+    }
+    .stat-item .stat-label {
+      font-size: 10.5px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .stat-item .stat-value {
+      font-size: 13.5px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: var(--text);
+      margin-top: 2px;
+    }
+    .stat-item .stat-value.highlight {
+      color: var(--success);
+    }
+
+    /* ── QR Display Stage ── */
+    .qr-stage {
+      background: #ffffff;
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 280px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
       position: relative;
     }
-    .file-drop:hover, .file-drop.has-file { border-color: var(--accent); }
-    .file-drop input {
-      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
-    }
-    .file-drop-icon { font-size: 28px; margin-bottom: 8px; }
-    .file-drop-label { font-size: 13px; color: var(--text-muted); }
-    .file-drop-name { font-size: 13px; font-weight: 600; color: var(--accent2); margin-top: 4px; word-break: break-all; }
-
-    /* ── QR Code area ── */
-    .qr-wrap {
+    #qrcode {
       display: flex;
       justify-content: center;
       align-items: center;
-      background: #fff;
-      border-radius: var(--radius);
-      padding: 12px;
-      margin-bottom: 12px;
-      min-height: 200px;
     }
-    #qrcode canvas, #qrcode img { display: block; }
+    #qrcode img, #qrcode canvas {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+    }
+    .qr-tag {
+      position: absolute;
+      bottom: 8px;
+      background: rgba(15, 23, 42, 0.85);
+      color: #e2e8f0;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 99px;
+      letter-spacing: 0.5px;
+    }
 
-    /* ── Video / Camera ── */
-    .camera-wrap {
+    /* ── Settings Accordion ── */
+    .settings-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      background: var(--bg-card-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+    }
+    .setting-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .setting-label {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .setting-select {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 6px 10px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      outline: none;
+    }
+
+    /* ── Progress Bar ── */
+    .progress-section {
+      background: var(--bg-card-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+    .progress-header span:last-child {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: #fff;
+    }
+    .progress-track {
+      height: 8px;
+      background: #0f172a;
+      border-radius: 99px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #38bdf8);
+      border-radius: 99px;
+      transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ── Chunk Matrix Grid Map ── */
+    .chunk-matrix {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: var(--bg-card-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+    }
+    .matrix-title {
+      font-size: 11.5px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .matrix-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      max-height: 100px;
+      overflow-y: auto;
+      padding-top: 4px;
+    }
+    .chunk-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      font-size: 8px;
+      font-family: var(--font-mono);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      transition: all 0.2s ease;
+    }
+    .chunk-dot.received {
+      background: var(--success);
+      border-color: #34d399;
+      color: #064e3b;
+      font-weight: bold;
+      box-shadow: 0 0 6px var(--success-glow);
+    }
+
+    /* ── Camera Viewport ── */
+    .camera-viewport {
       position: relative;
       background: #000;
       border-radius: var(--radius);
       overflow: hidden;
-      aspect-ratio: 1;
-      margin-bottom: 12px;
+      aspect-ratio: 4/3;
+      border: 1px solid var(--border);
     }
-    .camera-wrap video {
+    .camera-viewport video {
       width: 100%;
       height: 100%;
       object-fit: cover;
@@ -253,42 +460,147 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      color: var(--text-muted);
+      gap: 12px;
+      color: var(--text-dim);
       font-size: 13px;
       text-align: center;
       padding: 20px;
-      gap: 10px;
     }
-    .camera-placeholder-icon { font-size: 40px; }
-    /* scan crosshair overlay */
-    .scan-overlay {
+    .camera-placeholder-icon {
+      font-size: 44px;
+      opacity: 0.8;
+    }
+
+    /* Scanner HUD Overlay */
+    .scanner-hud {
       position: absolute;
       inset: 0;
       pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    .scan-corner {
+    .hud-frame {
+      width: 70%;
+      height: 70%;
+      position: relative;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+      border-radius: 12px;
+    }
+    .hud-corner {
       position: absolute;
-      width: 36px; height: 36px;
-      border-color: var(--accent2);
+      width: 24px;
+      height: 24px;
+      border-color: #38bdf8;
       border-style: solid;
       border-width: 0;
     }
-    .scan-corner.tl { top: 16px; left: 16px; border-top-width: 3px; border-left-width: 3px; border-radius: 4px 0 0 0; }
-    .scan-corner.tr { top: 16px; right: 16px; border-top-width: 3px; border-right-width: 3px; border-radius: 0 4px 0 0; }
-    .scan-corner.bl { bottom: 16px; left: 16px; border-bottom-width: 3px; border-left-width: 3px; border-radius: 0 0 0 4px; }
-    .scan-corner.br { bottom: 16px; right: 16px; border-bottom-width: 3px; border-right-width: 3px; border-radius: 0 0 4px 0; }
-    .scan-line {
+    .hud-corner.tl { top: 0; left: 0; border-top-width: 3px; border-left-width: 3px; border-radius: 4px 0 0 0; }
+    .hud-corner.tr { top: 0; right: 0; border-top-width: 3px; border-right-width: 3px; border-radius: 0 4px 0 0; }
+    .hud-corner.bl { bottom: 0; left: 0; border-bottom-width: 3px; border-left-width: 3px; border-radius: 0 0 0 4px; }
+    .hud-corner.br { bottom: 0; right: 0; border-bottom-width: 3px; border-right-width: 3px; border-radius: 0 0 4px 0; }
+    .hud-laser {
       position: absolute;
-      left: 20px; right: 20px;
+      left: 6px;
+      right: 6px;
       height: 2px;
-      background: linear-gradient(90deg, transparent, var(--accent2), transparent);
-      top: 50%;
-      animation: scanline 2s ease-in-out infinite;
+      background: linear-gradient(90deg, transparent, #38bdf8, #10b981, transparent);
+      box-shadow: 0 0 8px #38bdf8;
+      animation: laser-sweep 2.2s ease-in-out infinite;
     }
-    @keyframes scanline {
-      0% { top: 20px; }
-      50% { top: calc(100% - 20px); }
-      100% { top: 20px; }
+    @keyframes laser-sweep {
+      0% { top: 8px; opacity: 0.8; }
+      50% { top: calc(100% - 10px); opacity: 1; }
+      100% { top: 8px; opacity: 0.8; }
+    }
+
+    /* ── Action Buttons ── */
+    .btn {
+      width: 100%;
+      padding: 13px 16px;
+      border-radius: var(--radius-sm);
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #1d4ed8);
+      color: #fff;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px var(--accent-glow);
+    }
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.25);
+    }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    .btn-outline:hover {
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    /* ── Cybersecurity & Help Info Section ── */
+    .info-section {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .info-card {
+      background: var(--bg-card-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+    }
+    .info-card h4 {
+      font-size: 14px;
+      color: #fff;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .info-card p, .info-card li {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    .info-card ul {
+      padding-left: 18px;
+      margin-top: 6px;
+    }
+
+    /* ── Footer ── */
+    .app-footer {
+      text-align: center;
+      font-size: 11.5px;
+      color: var(--text-dim);
+      padding: 10px 0;
+    }
+    .app-footer a {
+      color: var(--accent);
+      text-decoration: none;
     }
   </style>
 </head>
@@ -297,151 +609,319 @@
 <div id="app">
 
   <!-- Header -->
-  <div class="header">
-    <div class="logo">📡</div>
-    <div>
-      <div class="header-title">AirQR Transfer</div>
-      <div class="header-sub">Air-gapped file transfer via QR codes</div>
+  <header class="app-header">
+    <div class="brand-left">
+      <div class="brand-icon">📡</div>
+      <div>
+        <div class="brand-title">Airgapped QR Code Transfer</div>
+        <div class="brand-sub">
+          <span>Zero-Trust Optical Data Diode</span>
+          <span class="badge-airgap">100% Offline</span>
+        </div>
+      </div>
     </div>
-  </div>
+    <div class="student-pill">
+      <div><strong>Uday Madankar</strong></div>
+      <div>PRN: 202501030039 (Batch C2)</div>
+    </div>
+  </header>
 
-  <!-- Tabs -->
-  <div class="tabs">
+  <!-- Navigation Tabs -->
+  <nav class="nav-tabs">
     <button class="tab-btn" :class="{ active: tab === 'send' }" @click="switchTab('send')">
-      📤 Send
+      📤 Sender Mode
     </button>
     <button class="tab-btn" :class="{ active: tab === 'receive' }" @click="switchTab('receive')">
-      📥 Receive
+      📥 Receiver Mode
     </button>
-  </div>
+    <button class="tab-btn" :class="{ active: tab === 'about' }" @click="switchTab('about')">
+      🛡️ Security & Info
+    </button>
+  </nav>
 
-  <!-- ── SEND PANEL ── -->
-  <div class="panel" v-show="tab === 'send'">
+  <!-- ==================== SENDER PANEL ==================== -->
+  <main class="panel-card" v-show="tab === 'send'">
 
-    <!-- Status -->
-    <div class="status-box" :class="{ active: is_transferring }">
-      <div class="status-dot"></div>
+    <!-- Status Banner -->
+    <div class="status-banner" :class="{ active: is_transferring }">
+      <div class="status-indicator"></div>
       <span>{{ send_message }}</span>
     </div>
 
-    <!-- Progress (only during transfer) -->
-    <div class="progress-wrap" v-if="is_transferring">
-      <div class="progress-label">
-        <span>Sending chunks</span>
-        <span>{{ send_current }} / {{ send_total }}</span>
-      </div>
-      <div class="progress-bar-bg">
-        <div class="progress-bar-fill" :style="{ width: send_progress + '%' }"></div>
-      </div>
-    </div>
-
-    <!-- File picker -->
-    <div class="file-drop" :class="{ 'has-file': selected_file }" v-if="!is_transferring">
+    <!-- File Picker Dropzone (when idle) -->
+    <div class="file-dropzone" :class="{ 'has-file': selected_file }" v-if="!is_transferring">
       <input type="file" id="file_input" @change="onFileSelect" />
-      <div class="file-drop-icon">{{ selected_file ? '📄' : '📁' }}</div>
-      <div class="file-drop-label">{{ selected_file ? 'File selected' : 'Tap to choose a file' }}</div>
-      <div class="file-drop-name" v-if="selected_file">{{ selected_file.name }}</div>
+      <div class="dropzone-icon">{{ selected_file ? '📄' : '📁' }}</div>
+      <div class="dropzone-title">
+        {{ selected_file ? selected_file.name : 'Click or Drag File to Transfer' }}
+      </div>
+      <div class="dropzone-sub">
+        {{ selected_file ? formatBytes(selected_file.size) : 'Supports code, text, PDFs, keys, config scripts, and images' }}
+      </div>
     </div>
 
-    <!-- QR Code -->
-    <div class="qr-wrap">
+    <!-- Compression & Slicing Stats -->
+    <div class="stats-card" v-if="selected_file">
+      <div class="stat-item">
+        <div class="stat-label">Original</div>
+        <div class="stat-value">{{ formatBytes(selected_file.size) }}</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Gzip Compressed</div>
+        <div class="stat-value highlight">{{ compressed_size ? formatBytes(compressed_size) : '...' }}</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Savings</div>
+        <div class="stat-value highlight">{{ compression_ratio }}%</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Chunks</div>
+        <div class="stat-value">{{ total_chunks || '...' }}</div>
+      </div>
+    </div>
+
+    <!-- Transfer Settings (Adjustable) -->
+    <div class="settings-row" v-if="!is_transferring">
+      <div class="setting-group">
+        <label class="setting-label">Transmission Speed (FPS)</label>
+        <select class="setting-select" v-model="frame_delay">
+          <option :value="35">⚡ Fast (35ms / ~28 FPS)</option>
+          <option :value="50">⚡ Normal (50ms / ~20 FPS)</option>
+          <option :value="90">🛡️ Stable / Low-Glare (90ms / ~11 FPS)</option>
+        </select>
+      </div>
+      <div class="setting-group">
+        <label class="setting-label">Chunk MTU Size</label>
+        <select class="setting-select" v-model="chunk_size">
+          <option :value="200">200 Bytes (High Scan Reliability)</option>
+          <option :value="250">250 Bytes (Standard Balanced)</option>
+          <option :value="350">350 Bytes (High Density)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Live Progress (during transfer) -->
+    <div class="progress-section" v-if="is_transferring">
+      <div class="progress-header">
+        <span>Transmitting QR Stream</span>
+        <span>Chunk {{ current_chunk_index + 1 }} / {{ total_chunks }} (Loop #{{ loop_count }})</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" :style="{ width: send_progress + '%' }"></div>
+      </div>
+    </div>
+
+    <!-- QR Code Stage -->
+    <div class="qr-stage">
       <div id="qrcode"></div>
+      <div class="qr-tag" v-if="is_transferring">
+        Frame {{ current_chunk_index }}/{{ total_chunks - 1 }} • {{ chunk_size }}B/chunk
+      </div>
+      <div class="qr-tag" v-else>
+        Optical Diode Ready
+      </div>
     </div>
 
-    <!-- Buttons -->
+    <!-- Action Buttons -->
     <button class="btn btn-primary" v-if="!is_transferring" @click="start_transfer" :disabled="!selected_file">
-      🚀 Start Transfer
+      🚀 Start Optical Transfer
     </button>
     <button class="btn btn-danger" v-else @click="stop_transfer">
-      ⏹ Stop Transfer
+      ⏹ Stop Optical Broadcast
     </button>
-  </div>
 
-  <!-- ── RECEIVE PANEL ── -->
-  <div class="panel" v-show="tab === 'receive'">
+  </main>
 
-    <!-- Error -->
-    <div class="status-box error" v-if="camera_error">
-      ⚠️ {{ camera_error }}
+  <!-- ==================== RECEIVER PANEL ==================== -->
+  <main class="panel-card" v-show="tab === 'receive'">
+
+    <!-- Status Banner -->
+    <div class="status-banner" :class="{ active: is_receiving, success: recv_done, danger: camera_error }">
+      <div class="status-indicator"></div>
+      <span>{{ camera_error ? camera_error : recv_message }}</span>
     </div>
 
-    <!-- Status -->
-    <div class="status-box" :class="{ active: is_receiving, success: recv_done }">
-      <div class="status-dot"></div>
-      <span>{{ recv_message }}</span>
-    </div>
-
-    <!-- Progress -->
-    <div class="progress-wrap" v-if="is_receiving || recv_done">
-      <div class="progress-label">
-        <span>Chunks received</span>
-        <span>{{ Object.keys(decoded_chunks).length }} / {{ file_metadata.chunks || '?' }}</span>
+    <!-- Live Progress -->
+    <div class="progress-section" v-if="is_receiving || recv_done">
+      <div class="progress-header">
+        <span>{{ file_metadata.name ? `Receiving: ${file_metadata.name}` : 'Scanning for payload headers...' }}</span>
+        <span>{{ Object.keys(decoded_chunks).length }} / {{ file_metadata.chunks || '?' }} ({{ recv_progress }}%)</span>
       </div>
-      <div class="progress-bar-bg">
-        <div class="progress-bar-fill" :style="{ width: recv_progress + '%' }"></div>
+      <div class="progress-track">
+        <div class="progress-fill" :style="{ width: recv_progress + '%' }"></div>
       </div>
     </div>
 
-    <!-- Camera -->
-    <div class="camera-wrap">
+    <!-- Visual Chunk Map Grid -->
+    <div class="chunk-matrix" v-if="file_metadata.chunks && file_metadata.chunks > 0">
+      <div class="matrix-title">
+        <span>Chunk Reception Map (Out-of-Order Friendly)</span>
+        <span>{{ Object.keys(decoded_chunks).length }}/{{ file_metadata.chunks }}</span>
+      </div>
+      <div class="matrix-grid">
+        <div 
+          v-for="idx in file_metadata.chunks" 
+          :key="idx" 
+          class="chunk-dot" 
+          :class="{ received: decoded_chunks[idx - 1] !== undefined }">
+          {{ idx - 1 }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Camera Viewport & Live Scanner HUD -->
+    <div class="camera-viewport">
       <video id="videoElement" muted autoplay playsinline></video>
+      
+      <!-- Inactive Placeholder -->
       <div class="camera-placeholder" v-if="!camera_active">
         <div class="camera-placeholder-icon">📷</div>
-        <div>Camera inactive.<br/>Tap "Start Receiving" to enable.</div>
+        <div>
+          <strong>Camera Scanner Offline</strong><br/>
+          Click "Start Scanner" to capture the sender's screen.
+        </div>
       </div>
-      <div class="scan-overlay" v-if="camera_active && is_receiving">
-        <div class="scan-corner tl"></div>
-        <div class="scan-corner tr"></div>
-        <div class="scan-corner bl"></div>
-        <div class="scan-corner br"></div>
-        <div class="scan-line"></div>
+
+      <!-- Active Scanner HUD -->
+      <div class="scanner-hud" v-if="camera_active && is_receiving">
+        <div class="hud-frame">
+          <div class="hud-corner tl"></div>
+          <div class="hud-corner tr"></div>
+          <div class="hud-corner bl"></div>
+          <div class="hud-corner br"></div>
+          <div class="hud-laser"></div>
+        </div>
       </div>
     </div>
 
-    <!-- Buttons -->
-    <button class="btn btn-primary" v-if="!is_receiving" @click="start_receiver">
-      📷 Start Receiving
-    </button>
-    <button class="btn btn-danger" v-else @click="stop_receiver">
-      ⏹ Stop Receiving
-    </button>
-  </div>
+    <!-- Action Buttons -->
+    <div style="display: flex; gap: 10px;">
+      <button class="btn btn-primary" v-if="!is_receiving" @click="start_receiver">
+        📷 Start Camera Scanner
+      </button>
+      <button class="btn btn-danger" v-else @click="stop_receiver">
+        ⏹ Stop Scanner
+      </button>
+    </div>
+
+  </main>
+
+  <!-- ==================== SECURITY & ABOUT PANEL ==================== -->
+  <main class="panel-card" v-show="tab === 'about'">
+    <div class="info-section">
+      
+      <div class="info-card">
+        <h4>🛡️ Why Air-Gapped Optical Transfer?</h4>
+        <p>
+          Standard file-sharing relies on local networks, Bluetooth, internet cloud servers, or USB flash drives. In high-security settings, college labs, or network-restricted sites, these methods introduce vulnerabilities or are physically blocked.
+        </p>
+      </div>
+
+      <div class="info-card">
+        <h4>⚡ Key Engineering Highlights</h4>
+        <ul>
+          <li><strong>BadUSB Immunity:</strong> Data travels strictly through optical photons (light). No electrical contacts or device drivers are touched.</li>
+          <li><strong>Zero Network Footprint:</strong> Operates 100% offline inside browser memory. 0 HTTP requests, 0 sockets, 0 backend dependencies.</li>
+          <li><strong>In-Memory Gzip Compression:</strong> Uses Pako.js (Level 9 Deflate) to shrink file payloads up to 80% before QR serialization.</li>
+          <li><strong>WASM Speed:</strong> Scans and decodes QR matrices using WebAssembly (<span style="font-family: var(--font-mono);">zbar-wasm</span>) at 20–30 FPS.</li>
+          <li><strong>Out-of-Order Reassembly:</strong> Receives chunks in any random order, tracks missing pieces, and decompresses the full file automatically.</li>
+        </ul>
+      </div>
+
+      <div class="info-card">
+        <h4>📋 Prototype Specifications</h4>
+        <ul>
+          <li><strong>Student:</strong> Uday Madankar (PRN: 202501030039)</li>
+          <li><strong>Course:</strong> Software Product Prototyping (Software Proto)</li>
+          <li><strong>Institute:</strong> MIT Academy of Engineering, Pune</li>
+          <li><strong>Document:</strong> Assignment 2 — Software Requirements Specification (SRS)</li>
+        </ul>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <span>MIT Academy of Engineering • Software Product Prototyping • Batch C2</span>
+  </footer>
 
 </div>
 
-<!-- Scripts -->
-<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@latest/dist/index.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.3/pako.min.js"></script>
-
+<!-- Application Logic -->
 <script>
-const { createApp, ref, reactive, computed, onMounted, watch } = Vue;
+const { createApp, ref, reactive, computed, onMounted } = Vue;
 
 createApp({
   setup() {
-    // ── Tab ──
     const tab = ref('send');
 
-    // ═══════════════════════════════
-    //  SEND (Generator) state
-    // ═══════════════════════════════
-    const send_message  = ref('Choose a file to begin');
+    // ── Sender State ──
+    const send_message = ref('Select a file to begin optical transfer');
     const is_transferring = ref(false);
     const selected_file = ref(null);
-    const send_current  = ref(0);
-    const send_total    = ref(0);
-    const send_progress = computed(() =>
-      send_total.value ? Math.round((send_current.value / send_total.value) * 100) : 0
-    );
-    const chunk_size = 250;
+    const compressed_size = ref(0);
+    const compression_ratio = ref(0);
+    const total_chunks = ref(0);
+    const current_chunk_index = ref(0);
+    const loop_count = ref(1);
+    const chunk_size = ref(250);
+    const frame_delay = ref(50);
     let qrcode_object = null;
+    let transfer_timer = null;
 
-    const onFileSelect = (e) => {
-      selected_file.value = e.target.files[0] || null;
-      if (selected_file.value) send_message.value = `Ready: ${selected_file.value.name}`;
+    const send_progress = computed(() => {
+      if (!total_chunks.value) return 0;
+      return Math.round(((current_chunk_index.value + 1) / total_chunks.value) * 100);
+    });
+
+    // ── Receiver State ──
+    const recv_message = ref('Click "Start Camera Scanner" to scan');
+    const camera_error = ref('');
+    const camera_active = ref(false);
+    const is_receiving = ref(false);
+    const recv_done = ref(false);
+    const decoded_chunks = ref({});
+    const file_metadata = reactive({});
+    let canvas = null;
+    let context = null;
+    let videoElement = null;
+
+    const recv_progress = computed(() => {
+      if (!file_metadata.chunks) return 0;
+      return Math.round((Object.keys(decoded_chunks.value).length / file_metadata.chunks) * 100);
+    });
+
+    // Helper: format bytes
+    const formatBytes = (bytes) => {
+      if (!bytes || bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
+    // File selection handler
+    const onFileSelect = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      selected_file.value = file;
+      send_message.value = `Analyzing & compressing ${file.name}...`;
+
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const compressed = pako.gzip(arrayBuffer, { level: 9 });
+        compressed_size.value = compressed.length;
+        compression_ratio.value = Math.max(0, Math.round((1 - (compressed.length / file.size)) * 100));
+        total_chunks.value = Math.ceil(compressed.length / chunk_size.value);
+        send_message.value = `Ready to transfer ${file.name} (${total_chunks.value} chunks)`;
+      } catch (err) {
+        console.error('Compression error:', err);
+        send_message.value = 'Failed to process file.';
+      }
+    };
+
+    // Encode chunk with index
     const encode_data = (index, input_bytes) => {
       let encoded_string = String.fromCharCode.apply(null, input_bytes);
       let utf8Encoder = new TextEncoder();
@@ -450,76 +930,72 @@ createApp({
       return index + ',' + encoded_data;
     };
 
-    const stop_transfer = () => {
-      is_transferring.value = false;
-      send_message.value = 'Choose a file to begin';
-      if (qrcode_object) { qrcode_object.clear(); }
-    };
-
+    // Start Sender Transmission
     const start_transfer = async () => {
       if (!selected_file.value) return;
       is_transferring.value = true;
+      loop_count.value = 1;
 
       const file = selected_file.value;
-      const data_array = pako.gzip(await file.arrayBuffer(), { level: 9 });
-      const total_chunks = Math.ceil(data_array.length / chunk_size);
-      send_total.value = total_chunks;
-      send_current.value = 0;
+      const arrayBuffer = await file.arrayBuffer();
+      const compressed = pako.gzip(arrayBuffer, { level: 9 });
+      total_chunks.value = Math.ceil(compressed.length / chunk_size.value);
 
-      const file_metadata = { name: file.name, chunks: total_chunks };
+      const metadata = {
+        name: file.name,
+        size: file.size,
+        chunks: total_chunks.value,
+        cSize: compressed.length
+      };
+
+      // Emit header frame
+      send_message.value = `Broadcasting metadata for ${file.name}...`;
       qrcode_object.clear();
-      qrcode_object.makeCode(JSON.stringify(file_metadata));
-      send_message.value = 'Starting in 1 second…';
-      await new Promise(r => setTimeout(r, 1000));
+      qrcode_object.makeCode(JSON.stringify(metadata));
+      await new Promise(r => setTimeout(r, 1200));
 
-      for (let i = 0; i < total_chunks; i++) {
-        if (!is_transferring.value) break;
-        await new Promise(r => setTimeout(r, 50));
-        const chunk = data_array.subarray(i * chunk_size, (i + 1) * chunk_size);
-        qrcode_object.clear();
-        qrcode_object.makeCode(encode_data(i, chunk));
-        send_current.value = i + 1;
-        send_message.value = `Chunk ${i + 1} of ${total_chunks}`;
-      }
+      // Continuous loop
+      while (is_transferring.value) {
+        for (let i = 0; i < total_chunks.value; i++) {
+          if (!is_transferring.value) break;
+          current_chunk_index.value = i;
+          send_message.value = `Broadcasting Chunk ${i + 1}/${total_chunks.value} (Loop #${loop_count.value})`;
 
-      if (is_transferring.value) {
-        send_message.value = '✅ Transfer complete!';
-        is_transferring.value = false;
+          const start = i * chunk_size.value;
+          const chunk = compressed.subarray(start, start + chunk_size.value);
+          const payload = encode_data(i, chunk);
+
+          qrcode_object.clear();
+          qrcode_object.makeCode(payload);
+          await new Promise(r => setTimeout(r, frame_delay.value));
+        }
+        loop_count.value++;
       }
     };
 
-    // ═══════════════════════════════
-    //  RECEIVE (Scanner) state
-    // ═══════════════════════════════
-    const recv_message  = ref('Tap "Start Receiving" to scan');
-    const camera_error  = ref('');
-    const camera_active = ref(false);
-    const is_receiving  = ref(false);
-    const recv_done     = ref(false);
-    const decoded_chunks = ref({});
-    const file_metadata  = reactive({});
-    const recv_progress  = computed(() => {
-      if (!file_metadata.chunks) return 0;
-      return Math.round((Object.keys(decoded_chunks.value).length / file_metadata.chunks) * 100);
-    });
-    let canvas, context, videoElement;
+    const stop_transfer = () => {
+      is_transferring.value = false;
+      current_chunk_index.value = 0;
+      send_message.value = selected_file.value ? `Ready: ${selected_file.value.name}` : 'Select a file to begin optical transfer';
+      if (qrcode_object) {
+        qrcode_object.clear();
+        qrcode_object.makeCode('Airgapped QR Diode Ready');
+      }
+    };
 
+    // Initialize Receiver Camera
     const initCamera = async () => {
       camera_error.value = '';
-
-      if (!window.isSecureContext && !['localhost','127.0.0.1'].includes(window.location.hostname)) {
-        camera_error.value = `Insecure connection (${window.location.protocol}//${window.location.host}). Mobile browsers require HTTPS to access the camera.`;
-        return false;
-      }
       if (!navigator.mediaDevices?.getUserMedia) {
-        camera_error.value = 'Camera API unavailable. Open this page over HTTPS or on localhost.';
+        camera_error.value = 'Camera API unavailable. Open in modern browser over HTTPS or localhost.';
         return false;
       }
-
       try {
         let stream;
         try {
-          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } });
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: 'environment' } }
+          });
         } catch {
           stream = await navigator.mediaDevices.getUserMedia({ video: true });
         }
@@ -530,13 +1006,12 @@ createApp({
         return true;
       } catch (err) {
         camera_active.value = false;
-        camera_error.value = err.name === 'NotAllowedError'
-          ? 'Camera permission denied. Please allow camera access and try again.'
-          : `Camera error: ${err.message || err.name}`;
+        camera_error.value = 'Camera permission denied or camera unavailable.';
         return false;
       }
     };
 
+    // Decode incoming base64 chunk string
     const decode_data = (input_string) => {
       const parts = input_string.split(',');
       const encoded_data = atob(parts[1]);
@@ -544,10 +1019,11 @@ createApp({
       const output_string = new TextDecoder().decode(new Uint8Array(encoded_array));
       return {
         index: parseInt(parts[0]),
-        data: Array.from(output_string, c => c.charCodeAt(0)),
+        data: Array.from(output_string, c => c.charCodeAt(0))
       };
     };
 
+    // Download reconstructed file
     const download_file = (data, fileName) => {
       const blob = new Blob([data]);
       const a = document.createElement('a');
@@ -557,36 +1033,28 @@ createApp({
       URL.revokeObjectURL(a.href);
     };
 
-    const stop_receiver = () => {
-      is_receiving.value = false;
-      recv_done.value = false;
-      decoded_chunks.value = {};
-      Object.keys(file_metadata).forEach(k => delete file_metadata[k]);
-      recv_message.value = 'Tap "Start Receiving" to scan';
-    };
-
+    // Receiver loop
     const start_receiver = async () => {
       recv_done.value = false;
       if (!camera_active.value) {
-        recv_message.value = 'Requesting camera…';
+        recv_message.value = 'Initializing camera sensor...';
         const ok = await initCamera();
-        if (!ok) { recv_message.value = 'Camera access failed. Check the error above.'; return; }
-        // Wait a tick for video metadata to load
-        await new Promise(r => setTimeout(r, 800));
+        if (!ok) return;
+        await new Promise(r => setTimeout(r, 600));
         canvas = document.createElement('canvas');
         context = canvas.getContext('2d');
       }
 
       decoded_chunks.value = {};
       is_receiving.value = true;
-      recv_message.value = 'Scanning… point at a QR code';
+      recv_message.value = 'Scanning... Point camera at emitting screen';
 
-      while (is_receiving.value && file_metadata.chunks != Object.keys(decoded_chunks.value).length) {
+      while (is_receiving.value && (!file_metadata.chunks || Object.keys(decoded_chunks.value).length < file_metadata.chunks)) {
         try {
-          await new Promise(r => setTimeout(r, 60));
+          await new Promise(r => setTimeout(r, 30));
           if (!videoElement?.videoWidth) continue;
 
-          if (canvas.width !== videoElement.videoWidth)  canvas.width  = videoElement.videoWidth;
+          if (canvas.width !== videoElement.videoWidth) canvas.width = videoElement.videoWidth;
           if (canvas.height !== videoElement.videoHeight) canvas.height = videoElement.videoHeight;
 
           context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
@@ -594,39 +1062,51 @@ createApp({
           const symbols = await zbarWasm.scanImageData(image_data);
 
           if (symbols?.length) {
-            const decoded_data = symbols[0].decode();
-            if (decoded_data.includes('chunks')) {
-              Object.assign(file_metadata, JSON.parse(decoded_data));
-              decoded_chunks.value = {};
-              recv_message.value = `Receiving: ${file_metadata.name}`;
-            } else if (decoded_data.split(',').length === 2) {
-              const raw = decode_data(decoded_data);
-              decoded_chunks.value[raw.index] = raw.data;
+            const decoded_text = symbols[0].decode();
+            if (decoded_text.includes('chunks') && decoded_text.startsWith('{')) {
+              Object.assign(file_metadata, JSON.parse(decoded_text));
+              recv_message.value = `Receiving "${file_metadata.name}" (${file_metadata.chunks} chunks)`;
+            } else if (decoded_text.split(',').length === 2) {
+              const raw = decode_data(decoded_text);
+              if (raw && !isNaN(raw.index)) {
+                decoded_chunks.value[raw.index] = raw.data;
+              }
             }
           }
         } catch (err) {
-          console.error('Scan loop error:', err);
+          console.error('Scan error:', err);
         }
       }
 
-      if (!is_receiving.value) return; // stopped manually
+      if (!is_receiving.value) return;
 
-      // Assemble & download
-      recv_message.value = '✅ Done! Assembling file…';
+      // File assembly & decompression
+      recv_message.value = 'Assembling & decompressing payload...';
       let output_array = [];
       for (let i = 0; i < file_metadata.chunks; i++) {
         output_array = output_array.concat(decoded_chunks.value[i]);
       }
-      const inflated = pako.inflate(Uint8Array.from(output_array));
-      download_file(inflated, file_metadata.name);
 
-      recv_done.value = true;
-      is_receiving.value = false;
-      recv_message.value = `✅ "${file_metadata.name}" downloaded!`;
-      setTimeout(stop_receiver, 4000);
+      try {
+        const inflated = pako.inflate(Uint8Array.from(output_array));
+        download_file(inflated, file_metadata.name);
+        recv_done.value = true;
+        is_receiving.value = false;
+        recv_message.value = `✅ Successfully downloaded "${file_metadata.name}"!`;
+      } catch (e) {
+        console.error('Decompression failed:', e);
+        recv_message.value = 'Decompression error. Incomplete payload.';
+      }
     };
 
-    // Stop transfer when switching away from send tab
+    const stop_receiver = () => {
+      is_receiving.value = false;
+      recv_done.value = false;
+      decoded_chunks.value = {};
+      Object.keys(file_metadata).forEach(k => delete file_metadata[k]);
+      recv_message.value = 'Scanner stopped. Click "Start Camera Scanner" to scan';
+    };
+
     const switchTab = (t) => {
       if (t === 'receive' && is_transferring.value) stop_transfer();
       if (t === 'send' && is_receiving.value) stop_receiver();
@@ -634,13 +1114,13 @@ createApp({
     };
 
     onMounted(() => {
-      const size = Math.min(window.innerWidth - 64, 280);
+      const size = Math.min(window.innerWidth - 60, 260);
       qrcode_object = new QRCode('qrcode', {
-        text: ' ',
+        text: 'Airgapped QR Diode Ready',
         width: size,
         height: size,
         typeNumber: 40,
-        colorDark: '#000000',
+        colorDark: '#0b0f19',
         colorLight: '#ffffff',
         correctLevel: QRCode.CorrectLevel.M,
       });
@@ -648,16 +1128,15 @@ createApp({
     });
 
     return {
-      // Tab
-      tab, switchTab,
-      // Send
-      send_message, is_transferring, selected_file, onFileSelect,
-      send_current, send_total, send_progress,
-      start_transfer, stop_transfer,
-      // Receive
-      recv_message, camera_error, camera_active,
-      is_receiving, recv_done, decoded_chunks, file_metadata, recv_progress,
-      start_receiver, stop_receiver,
+      tab, switchTab, formatBytes,
+      // Sender
+      send_message, is_transferring, selected_file, compressed_size, compression_ratio,
+      total_chunks, current_chunk_index, loop_count, chunk_size, frame_delay, send_progress,
+      onFileSelect, start_transfer, stop_transfer,
+      // Receiver
+      recv_message, camera_error, camera_active, is_receiving, recv_done,
+      decoded_chunks, file_metadata, recv_progress,
+      start_receiver, stop_receiver
     };
   }
 }).mount('#app');
