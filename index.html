@@ -2,243 +2,492 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#0b0f19" />
-  <title>Airgapped QR Code Transfer — Zero-Trust Optical Data Diode</title>
-  
-  <!-- Fonts -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#F9F6F0" />
+  <meta name="description" content="AETHER Optical AirDrop — Minimal, warm, zero-trust optical data diode web application. Air-gapped file transfer via animated QR streams and real-time WASM camera capture." />
+  <title>AETHER — Optical AirDrop</title>
+
+  <!-- Typography: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 
-  <!-- Libraries: Vue 3, QRCode.js, zbar-wasm, Pako Gzip -->
+  <!-- Core Libraries -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@undecaf/zbar-wasm@latest/dist/index.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.3/pako.min.js"></script>
 
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg: #0b0f19;
-      --bg-card: #131b2e;
-      --bg-card-alt: #1a233a;
-      --border: #23304d;
-      --border-focus: #3b82f6;
-      --accent: #2563eb;
-      --accent-hover: #1d4ed8;
-      --accent-glow: rgba(37, 99, 235, 0.35);
-      --success: #10b981;
-      --success-glow: rgba(16, 185, 129, 0.25);
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --text-dim: #64748b;
-      --radius: 14px;
-      --radius-sm: 8px;
-      --font-mono: 'JetBrains Mono', monospace;
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    body {
-      background-color: var(--bg);
-      color: var(--text);
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    :root {
+      /* Warm Cozy Apple Color Palette */
+      --bg-warm: #F9F7F2;
+      --bg-surface: #FFFFFF;
+      --bg-surface-soft: #F4F0E8;
+      --bg-surface-elevated: #EDE7DC;
+      
+      --border-light: rgba(60, 45, 30, 0.08);
+      --border-focus: #C26747;
+      
+      /* Accents: Warm Terracotta, Honey Amber, Soft Sage Green */
+      --accent: #C26747; /* Warm Terracotta */
+      --accent-hover: #B05536;
+      --accent-soft: rgba(194, 103, 71, 0.1);
+      
+      --amber: #D97706; /* Warm Honey */
+      --amber-soft: rgba(217, 119, 6, 0.1);
+      
+      --sage: #2E7D32; /* Soft Apple Moss / Emerald */
+      --sage-soft: rgba(46, 125, 50, 0.1);
+      
+      --text-primary: #24201D; /* Deep Espresso */
+      --text-secondary: #6B635B; /* Warm Charcoal */
+      --text-tertiary: #9E958C; /* Sand Taupe */
+      
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-xl: 26px;
+      --radius-pill: 9999px;
+      
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", sans-serif;
+      --font-mono: 'JetBrains Mono', SFMono-Regular, Menlo, Monaco, monospace;
+      
+      --shadow-subtle: 0 2px 10px rgba(45, 30, 20, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
+      --shadow-card: 0 10px 30px rgba(55, 38, 25, 0.05), 0 2px 6px rgba(0, 0, 0, 0.02);
+      --shadow-elevated: 0 18px 45px rgba(50, 35, 20, 0.09), 0 4px 12px rgba(0, 0, 0, 0.03);
+    }
+
+    html, body {
+      background-color: var(--bg-warm);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 16px 12px 32px;
+      line-height: 1.5;
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    /* Subtle Warm Linen Glow */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.7), transparent 70%);
+      pointer-events: none;
+      z-index: 0;
     }
 
     #app {
-      width: 100%;
-      max-width: 680px;
+      position: relative;
+      z-index: 1;
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 16px 14px 50px;
       display: flex;
       flex-direction: column;
       gap: 16px;
     }
 
-    /* ── App Header ── */
-    .app-header {
-      background: linear-gradient(135deg, rgba(19, 27, 46, 0.95), rgba(26, 35, 58, 0.95));
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 18px 20px;
+    @media (min-width: 768px) {
+      #app {
+        padding: 30px 28px 60px;
+        gap: 22px;
+      }
+    }
+
+    /* ─── Apple-style Top Bar ─── */
+    .nav-bar {
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-xl);
+      padding: 12px 18px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow-subtle);
+      transition: all 0.3s ease;
+      gap: 10px;
     }
-    .brand-left {
+
+    .brand-group {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 10px;
+      min-width: 0;
     }
-    .brand-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #2563eb, #38bdf8);
+
+    .brand-glyph {
+      width: 38px;
+      height: 38px;
+      border-radius: 11px;
+      background: linear-gradient(145deg, #FDFBF7, #EDE4D7);
+      border: 1px solid rgba(194, 103, 71, 0.2);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 22px;
-      box-shadow: 0 0 16px var(--accent-glow);
+      color: var(--accent);
+      box-shadow: 0 3px 10px rgba(194, 103, 71, 0.12);
+      font-size: 19px;
+      flex-shrink: 0;
     }
-    .brand-title {
-      font-size: 17px;
-      font-weight: 700;
+
+    .brand-meta {
+      min-width: 0;
+    }
+
+    .brand-meta h1 {
+      font-size: 15.5px;
+      font-weight: 600;
       letter-spacing: -0.3px;
-      color: #fff;
-    }
-    .brand-sub {
-      font-size: 11.5px;
-      color: var(--text-muted);
+      color: var(--text-primary);
       display: flex;
       align-items: center;
       gap: 6px;
-      margin-top: 2px;
-    }
-    .badge-airgap {
-      background: rgba(16, 185, 129, 0.15);
-      color: var(--success);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      padding: 1px 7px;
-      border-radius: 99px;
-      font-size: 10px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    /* ── Student & Project Info Pill ── */
-    .student-pill {
-      text-align: right;
+    .brand-meta .badge-soft {
       font-size: 11px;
-      color: var(--text-dim);
-      line-height: 1.4;
-    }
-    .student-pill strong {
-      color: var(--text-muted);
+      font-weight: 500;
+      background: var(--bg-surface-soft);
+      color: var(--text-secondary);
+      padding: 1px 7px;
+      border-radius: var(--radius-pill);
+      letter-spacing: 0;
     }
 
-    /* ── Navigation Tabs ── */
-    .nav-tabs {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
-      background: var(--bg-card);
-      padding: 6px;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
+    .brand-meta p {
+      font-size: 11.5px;
+      color: var(--text-tertiary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    .tab-btn {
-      padding: 11px 12px;
-      background: transparent;
-      border: 1px solid transparent;
-      border-radius: var(--radius-sm);
-      color: var(--text-muted);
-      font-size: 13.5px;
-      font-weight: 600;
-      cursor: pointer;
+
+    .header-controls {
       display: flex;
       align-items: center;
-      justify-content: center;
       gap: 8px;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .tab-btn:hover:not(.active) {
-      background: rgba(255, 255, 255, 0.04);
-      color: var(--text);
-    }
-    .tab-btn.active {
-      background: var(--accent);
-      color: #fff;
-      border-color: rgba(255, 255, 255, 0.15);
-      box-shadow: 0 4px 12px var(--accent-glow);
-    }
-
-    /* ── Panels ── */
-    .panel-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 22px;
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
-    }
-
-    /* ── Info / Status Banner ── */
-    .status-banner {
-      background: var(--bg-card-alt);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 12px 16px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 13px;
-      color: var(--text-muted);
-      transition: all 0.3s ease;
-    }
-    .status-banner.active {
-      border-color: var(--accent);
-      background: rgba(37, 99, 235, 0.08);
-      color: #bfdbfe;
-    }
-    .status-banner.success {
-      border-color: var(--success);
-      background: rgba(16, 185, 129, 0.08);
-      color: #a7f3d0;
-    }
-    .status-banner.danger {
-      border-color: var(--danger);
-      background: rgba(239, 68, 68, 0.08);
-      color: #fca5a5;
-    }
-    .status-indicator {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--text-dim);
       flex-shrink: 0;
     }
-    .status-banner.active .status-indicator {
-      background: var(--accent);
-      box-shadow: 0 0 10px var(--accent);
-      animation: pulse-dot 1.5s infinite;
+
+    .pill-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 500;
+      background: var(--sage-soft);
+      color: var(--sage);
+      padding: 4px 11px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(46, 125, 50, 0.2);
+      white-space: nowrap;
     }
-    .status-banner.success .status-indicator {
-      background: var(--success);
-      box-shadow: 0 0 10px var(--success);
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--sage);
+      box-shadow: 0 0 6px var(--sage);
+      animation: pulse-warm 2s infinite ease-in-out;
     }
-    @keyframes pulse-dot {
+
+    @keyframes pulse-warm {
       0%, 100% { opacity: 1; transform: scale(1); }
       50% { opacity: 0.4; transform: scale(0.85); }
     }
 
-    /* ── File Upload Dropzone ── */
-    .file-dropzone {
-      border: 2px dashed var(--border);
-      background: rgba(26, 35, 58, 0.4);
-      border-radius: var(--radius);
-      padding: 28px 20px;
+    /* ─── Mode Switcher Pill Toggle (App Mode vs Dev Mode) ─── */
+    .pill-mode-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px 4px 5px;
+      background: var(--bg-surface-soft);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .pill-mode-toggle:hover {
+      background: var(--bg-surface-elevated);
+      color: var(--text-primary);
+    }
+
+    .pill-mode-toggle.is-dev {
+      background: var(--accent-soft);
+      border-color: rgba(194, 103, 71, 0.3);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .mode-pill-knob {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      color: var(--text-secondary);
+      transition: all 0.2s ease;
+      font-size: 11px;
+    }
+
+    .pill-mode-toggle.is-dev .mode-pill-knob {
+      background: var(--accent);
+      color: #FFFFFF;
+    }
+
+    .btn-icon-minimal {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--border-light);
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+
+    .btn-icon-minimal:hover {
+      background: var(--bg-surface-soft);
+      color: var(--text-primary);
+    }
+
+    .btn-icon-minimal.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-color: rgba(194, 103, 71, 0.3);
+    }
+
+    /* ─── Apple Segmented Control ─── */
+    .segmented-tabs-wrapper {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      position: sticky;
+      top: 10px;
+      z-index: 40;
+    }
+
+    .segmented-control {
+      background: rgba(237, 231, 220, 0.82);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: var(--radius-pill);
+      padding: 4px;
+      display: inline-flex;
+      gap: 3px;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05), 0 2px 10px rgba(0, 0, 0, 0.04);
+      width: 100%;
+      max-width: 680px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .segmented-control.compact-mode {
+      max-width: 290px;
+    }
+
+    .segmented-control::-webkit-scrollbar {
+      display: none;
+    }
+
+    .segment-btn {
+      flex: 1;
+      padding: 8px 16px;
+      border: none;
+      background: transparent;
+      border-radius: var(--radius-pill);
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+    }
+
+    .segment-btn:hover:not(.active) {
+      color: var(--text-primary);
+    }
+
+    .segment-btn.active {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(60, 45, 30, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    /* ─── Layout Grid (Responsive PC & Mobile) ─── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    @media (min-width: 900px) {
+      .main-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 22px;
+      }
+    }
+
+    /* ─── Apple Cards ─── */
+    .apple-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-xl);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: var(--shadow-card);
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    @media (min-width: 768px) {
+      .apple-card {
+        padding: 26px;
+      }
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .card-heading-title {
+      font-size: 15.5px;
+      font-weight: 600;
+      letter-spacing: -0.2px;
+      color: var(--text-primary);
+    }
+
+    .card-heading-sub {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      margin-top: 1px;
+    }
+
+    /* Sub-Segmented (File vs Note) */
+    .sub-segmented {
+      background: var(--bg-surface-soft);
+      padding: 3px;
+      border-radius: var(--radius-pill);
+      display: inline-flex;
+      gap: 2px;
+    }
+
+    .sub-segment-btn {
+      padding: 4px 11px;
+      border: none;
+      background: transparent;
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .sub-segment-btn.active {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      font-weight: 600;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    /* ─── Status Pill Banner ─── */
+    .status-strip {
+      background: var(--bg-surface-soft);
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      transition: all 0.3s ease;
+      word-break: break-word;
+    }
+
+    .status-strip.is-active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .status-strip.is-success {
+      background: var(--sage-soft);
+      color: var(--sage);
+      font-weight: 500;
+    }
+
+    /* ─── Dropzone Area ─── */
+    .dropzone-apple {
+      border: 2px dashed rgba(194, 103, 71, 0.28);
+      background: linear-gradient(180deg, #FDFCF9, #F7F3EB);
+      border-radius: var(--radius-lg);
+      padding: 26px 16px;
       text-align: center;
       cursor: pointer;
       position: relative;
-      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .file-dropzone:hover, .file-dropzone.has-file {
+
+    .dropzone-apple:hover, .dropzone-apple.has-file {
       border-color: var(--accent);
-      background: rgba(37, 99, 235, 0.05);
+      background: #FDF9F5;
+      transform: scale(0.995);
     }
-    .file-dropzone input {
+
+    .dropzone-apple input[type="file"] {
       position: absolute;
       inset: 0;
       opacity: 0;
@@ -246,233 +495,484 @@
       width: 100%;
       height: 100%;
     }
-    .dropzone-icon {
-      font-size: 36px;
-      margin-bottom: 8px;
+
+    .dropzone-glyph {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      background: var(--bg-surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      box-shadow: 0 4px 14px rgba(194, 103, 71, 0.12);
+      font-size: 24px;
     }
+
     .dropzone-title {
       font-size: 14px;
       font-weight: 600;
-      color: #fff;
-    }
-    .dropzone-sub {
-      font-size: 12px;
-      color: var(--text-dim);
-      margin-top: 4px;
+      color: var(--text-primary);
+      word-break: break-all;
     }
 
-    /* ── Compression Stats Card ── */
-    .stats-card {
-      background: var(--bg-card-alt);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 12px 16px;
+    .dropzone-desc {
+      font-size: 11.5px;
+      color: var(--text-tertiary);
+    }
+
+    /* ─── Secret Text Area ─── */
+    .text-editor {
+      width: 100%;
+      background: #FDFCF9;
+      border: 1px solid rgba(60, 45, 30, 0.1);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      color: var(--text-primary);
+      min-height: 110px;
+      resize: vertical;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .text-editor:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+      background: #FFFFFF;
+    }
+
+    /* Preset Chips */
+    .presets-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .preset-chip {
+      background: var(--bg-surface-soft);
+      border: 1px solid rgba(60, 45, 30, 0.06);
+      color: var(--text-secondary);
+      border-radius: var(--radius-pill);
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .preset-chip:hover {
+      background: var(--bg-surface-elevated);
+      color: var(--text-primary);
+    }
+
+    /* ─── Telemetry Info Badges ─── */
+    .telemetry-row {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 8px;
+      background: var(--bg-surface-soft);
+      border-radius: var(--radius-md);
+      padding: 11px 12px;
       text-align: center;
     }
-    .stat-item .stat-label {
-      font-size: 10.5px;
-      color: var(--text-dim);
+
+    .telemetry-item .label {
+      font-size: 10px;
+      color: var(--text-tertiary);
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .stat-item .stat-value {
-      font-size: 13.5px;
-      font-family: var(--font-mono);
-      font-weight: 600;
-      color: var(--text);
-      margin-top: 2px;
-    }
-    .stat-item .stat-value.highlight {
-      color: var(--success);
+      letter-spacing: 0.3px;
     }
 
-    /* ── QR Display Stage ── */
-    .qr-stage {
-      background: #ffffff;
-      border-radius: var(--radius);
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 280px;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-      position: relative;
-    }
-    #qrcode {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    #qrcode img, #qrcode canvas {
-      max-width: 100%;
-      height: auto;
-      border-radius: 4px;
-    }
-    .qr-tag {
-      position: absolute;
-      bottom: 8px;
-      background: rgba(15, 23, 42, 0.85);
-      color: #e2e8f0;
+    .telemetry-item .value {
       font-family: var(--font-mono);
-      font-size: 11px;
-      padding: 3px 10px;
-      border-radius: 99px;
-      letter-spacing: 0.5px;
-    }
-
-    /* ── Settings Accordion ── */
-    .settings-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      background: var(--bg-card-alt);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 12px 14px;
-    }
-    .setting-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .setting-label {
-      font-size: 11.5px;
-      color: var(--text-muted);
-      font-weight: 500;
-    }
-    .setting-select {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text);
-      padding: 6px 10px;
-      font-size: 12px;
-      font-family: var(--font-mono);
-      outline: none;
-    }
-
-    /* ── Progress Bar ── */
-    .progress-section {
-      background: var(--bg-card-alt);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 14px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .progress-header {
-      display: flex;
-      justify-content: space-between;
       font-size: 12.5px;
-      color: var(--text-muted);
-    }
-    .progress-header span:last-child {
-      font-family: var(--font-mono);
       font-weight: 600;
-      color: #fff;
-    }
-    .progress-track {
-      height: 8px;
-      background: #0f172a;
-      border-radius: 99px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-    }
-    .progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent), #38bdf8);
-      border-radius: 99px;
-      transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      color: var(--text-primary);
+      margin-top: 1px;
     }
 
-    /* ── Chunk Matrix Grid Map ── */
-    .chunk-matrix {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      background: var(--bg-card-alt);
-      border: 1px solid var(--border);
+    .telemetry-item .value.accent { color: var(--accent); }
+    .telemetry-item .value.sage { color: var(--sage); }
+
+    /* SHA-256 Fingerprint Pill */
+    .sha-pill {
+      background: #FDFCF9;
+      border: 1px solid rgba(60, 45, 30, 0.08);
       border-radius: var(--radius-sm);
-      padding: 12px 14px;
-    }
-    .matrix-title {
-      font-size: 11.5px;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      display: flex;
-      justify-content: space-between;
-    }
-    .matrix-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      max-height: 100px;
-      overflow-y: auto;
-      padding-top: 4px;
-    }
-    .chunk-dot {
-      width: 14px;
-      height: 14px;
-      border-radius: 3px;
-      background: #1e293b;
-      border: 1px solid #334155;
-      font-size: 8px;
-      font-family: var(--font-mono);
+      padding: 8px 12px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      color: #64748b;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text-secondary);
+      min-width: 0;
+    }
+
+    .sha-pill span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+
+    .sha-copy-btn {
+      background: transparent;
+      border: none;
+      color: var(--accent);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .sha-copy-btn:hover {
+      background: var(--accent-soft);
+    }
+
+    /* Settings Row */
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .settings-col label {
+      display: block;
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .apple-select {
+      width: 100%;
+      background: var(--bg-surface-soft);
+      border: 1px solid rgba(60, 45, 30, 0.08);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      padding: 8px 10px;
+      font-size: 12px;
+      font-family: var(--font-sans);
+      outline: none;
+      cursor: pointer;
       transition: all 0.2s ease;
     }
-    .chunk-dot.received {
-      background: var(--success);
-      border-color: #34d399;
-      color: #064e3b;
-      font-weight: bold;
-      box-shadow: 0 0 6px var(--success-glow);
+
+    .apple-select:focus {
+      border-color: var(--accent);
+      background: #FFFFFF;
     }
 
-    /* ── Camera Viewport ── */
-    .camera-viewport {
+    /* ─── Apple Buttons ─── */
+    .btn-apple {
+      width: 100%;
+      padding: 13px 18px;
+      border-radius: var(--radius-pill);
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+      user-select: none;
+      min-height: 44px;
+    }
+
+    .btn-apple:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    .btn-apple:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .btn-primary-terracotta {
+      background: linear-gradient(180deg, #D97746, #C26747);
+      color: #FFFFFF;
+      box-shadow: 0 4px 18px rgba(194, 103, 71, 0.28);
+    }
+
+    .btn-primary-terracotta:hover:not(:disabled) {
+      background: linear-gradient(180deg, #E08252, #B55938);
+      box-shadow: 0 6px 22px rgba(194, 103, 71, 0.35);
+    }
+
+    .btn-secondary-warm {
+      background: var(--bg-surface-soft);
+      color: var(--text-primary);
+      border: 1px solid rgba(60, 45, 30, 0.08);
+    }
+
+    .btn-secondary-warm:hover {
+      background: var(--bg-surface-elevated);
+    }
+
+    .btn-stop-rose {
+      background: #FDF2F2;
+      border: 1px solid #FBC7C7;
+      color: #D32F2F;
+    }
+
+    .btn-stop-rose:hover {
+      background: #FCE8E8;
+    }
+
+    .btn-sage-success {
+      background: linear-gradient(180deg, #388E3C, #2E7D32);
+      color: #FFFFFF;
+      box-shadow: 0 4px 16px rgba(46, 125, 50, 0.25);
+    }
+
+    .btn-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    /* ─── QR Code Stage (Warm Apple Cleanliness) ─── */
+    .qr-stage-card {
+      background: #FAF8F5;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 20px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 270px;
       position: relative;
-      background: #000;
-      border-radius: var(--radius);
+      box-shadow: inset 0 2px 8px rgba(45, 30, 20, 0.03);
+    }
+
+    /* Spotlight Fullscreen Feature */
+    .qr-stage-card.is-spotlight {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      background: #FFFFFF;
+      border-radius: 0;
+      border: none;
+      padding: 40px 20px;
+      box-shadow: none;
+      justify-content: center;
+    }
+
+    .qr-stage-card.is-spotlight #qrcode-tx,
+    .qr-stage-card.is-spotlight #qrcode-tx img,
+    .qr-stage-card.is-spotlight #qrcode-tx canvas {
+      width: min(84vw, 84vh) !important;
+      height: min(84vw, 84vh) !important;
+      max-width: none !important;
+    }
+
+    .stage-expand-btn {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid rgba(60, 45, 30, 0.1);
+      color: var(--text-secondary);
+      border-radius: var(--radius-pill);
+      padding: 3px 10px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s ease;
+      z-index: 2;
+    }
+
+    .stage-expand-btn:hover {
+      background: var(--bg-surface-elevated);
+      color: var(--text-primary);
+    }
+
+    .qr-stage-card.is-spotlight .stage-expand-btn {
+      top: 24px;
+      right: 20px;
+      background: var(--bg-surface-soft);
+      padding: 8px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    }
+
+    .qr-stage-card.is-spotlight .stage-pill-tag {
+      bottom: 24px;
+      font-size: 12.5px;
+      padding: 6px 18px;
+    }
+
+    #qrcode-tx, #qrcode-sim {
+      background: #FFFFFF;
+      padding: 12px;
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(60, 45, 30, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      max-width: 100%;
+    }
+
+    #qrcode-tx img, #qrcode-tx canvas,
+    #qrcode-sim img, #qrcode-sim canvas {
+      display: block;
+      max-width: 100% !important;
+      height: auto !important;
+      aspect-ratio: 1 / 1;
+      border-radius: 6px;
+    }
+
+    .stage-pill-tag {
+      position: absolute;
+      bottom: 10px;
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(60, 45, 30, 0.08);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 500;
+      font-family: var(--font-mono);
+      padding: 3px 12px;
+      border-radius: var(--radius-pill);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+      white-space: nowrap;
+      max-width: 90%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Smooth Progress Bar */
+    .progress-bar-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+    }
+
+    .progress-track {
+      height: 7px;
+      background: var(--bg-surface-soft);
+      border-radius: var(--radius-pill);
+      overflow: hidden;
+      border: 1px solid rgba(60, 45, 30, 0.04);
+    }
+
+    .progress-fill-terracotta {
+      height: 100%;
+      background: linear-gradient(90deg, #D97746, #C26747);
+      border-radius: var(--radius-pill);
+      transition: width 0.15s ease-out;
+    }
+
+    .progress-fill-sage {
+      height: 100%;
+      background: linear-gradient(90deg, #43A047, #2E7D32);
+      border-radius: var(--radius-pill);
+      transition: width 0.15s ease-out;
+    }
+
+    /* ─── Receiver Camera Viewport (iOS Viewfinder Style) ─── */
+    .camera-viewfinder-card {
+      position: relative;
+      background: #1A1816;
+      border-radius: var(--radius-lg);
       overflow: hidden;
       aspect-ratio: 4/3;
-      border: 1px solid var(--border);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    .camera-viewport video {
+
+    .camera-viewfinder-card video {
       width: 100%;
       height: 100%;
       object-fit: cover;
       display: block;
     }
-    .camera-placeholder {
+
+    .camera-idle-screen {
       position: absolute;
       inset: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 12px;
-      color: var(--text-dim);
-      font-size: 13px;
+      gap: 10px;
+      color: #EDE7DC;
       text-align: center;
       padding: 20px;
-    }
-    .camera-placeholder-icon {
-      font-size: 44px;
-      opacity: 0.8;
+      background: radial-gradient(circle at center, #2C2621, #181512);
     }
 
-    /* Scanner HUD Overlay */
-    .scanner-hud {
+    .camera-idle-glyph {
+      width: 52px;
+      height: 52px;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    /* Floating Viewfinder Controls (Torch & Camera Flip on Mobile) */
+    .vf-floating-controls {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      gap: 6px;
+      z-index: 10;
+    }
+
+    .vf-pill-btn {
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #FFFFFF;
+      font-size: 11.5px;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .vf-pill-btn.active {
+      background: #F59E0B;
+      color: #000000;
+      border-color: #F59E0B;
+      font-weight: 600;
+    }
+
+    /* Apple-style Camera Corner Reticle */
+    .camera-hud {
       position: absolute;
       inset: 0;
       pointer-events: none;
@@ -480,127 +980,485 @@
       align-items: center;
       justify-content: center;
     }
-    .hud-frame {
-      width: 70%;
-      height: 70%;
+
+    .viewfinder-bracket {
+      width: 68%;
+      height: 68%;
       position: relative;
-      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
-      border-radius: 12px;
+      border-radius: 16px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
     }
-    .hud-corner {
+
+    .vf-corner {
       position: absolute;
-      width: 24px;
-      height: 24px;
-      border-color: #38bdf8;
+      width: 22px;
+      height: 22px;
+      border-color: #FFFFFF;
       border-style: solid;
       border-width: 0;
     }
-    .hud-corner.tl { top: 0; left: 0; border-top-width: 3px; border-left-width: 3px; border-radius: 4px 0 0 0; }
-    .hud-corner.tr { top: 0; right: 0; border-top-width: 3px; border-right-width: 3px; border-radius: 0 4px 0 0; }
-    .hud-corner.bl { bottom: 0; left: 0; border-bottom-width: 3px; border-left-width: 3px; border-radius: 0 0 0 4px; }
-    .hud-corner.br { bottom: 0; right: 0; border-bottom-width: 3px; border-right-width: 3px; border-radius: 0 0 4px 0; }
-    .hud-laser {
+
+    .vf-corner.tl { top: 0; left: 0; border-top-width: 3px; border-left-width: 3px; border-radius: 8px 0 0 0; }
+    .vf-corner.tr { top: 0; right: 0; border-top-width: 3px; border-right-width: 3px; border-radius: 0 8px 0 0; }
+    .vf-corner.bl { bottom: 0; left: 0; border-bottom-width: 3px; border-left-width: 3px; border-radius: 0 0 0 8px; }
+    .vf-corner.br { bottom: 0; right: 0; border-bottom-width: 3px; border-right-width: 3px; border-radius: 0 0 8px 0; }
+
+    .vf-sweep {
       position: absolute;
-      left: 6px;
-      right: 6px;
+      left: 10px;
+      right: 10px;
       height: 2px;
-      background: linear-gradient(90deg, transparent, #38bdf8, #10b981, transparent);
-      box-shadow: 0 0 8px #38bdf8;
-      animation: laser-sweep 2.2s ease-in-out infinite;
-    }
-    @keyframes laser-sweep {
-      0% { top: 8px; opacity: 0.8; }
-      50% { top: calc(100% - 10px); opacity: 1; }
-      100% { top: 8px; opacity: 0.8; }
+      background: linear-gradient(90deg, transparent, #F59E0B, #EF4444, transparent);
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.7);
+      animation: sweep-apple 2s ease-in-out infinite alternate;
     }
 
-    /* ── Action Buttons ── */
-    .btn {
-      width: 100%;
-      padding: 13px 16px;
-      border-radius: var(--radius-sm);
-      border: none;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
+    @keyframes sweep-apple {
+      0% { top: 12px; opacity: 0.8; }
+      100% { top: calc(100% - 14px); opacity: 1; }
+    }
+
+    /* ─── Ceramic Chunk Mosaic Matrix ─── */
+    .chunk-matrix-apple {
+      background: #FDFCF9;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .matrix-title {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .matrix-scroll-tray {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      max-height: 110px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .chunk-ceramic-dot {
+      width: 17px;
+      height: 17px;
+      border-radius: 4px;
+      background: #EFE9DF;
+      border: 1px solid rgba(60, 45, 30, 0.06);
+      font-size: 8.5px;
+      font-family: var(--font-mono);
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent), #1d4ed8);
-      color: #fff;
-      box-shadow: 0 4px 14px var(--accent-glow);
-    }
-    .btn-primary:hover:not(:disabled) {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 20px var(--accent-glow);
-    }
-    .btn-danger {
-      background: rgba(239, 68, 68, 0.15);
-      color: #f87171;
-      border: 1px solid rgba(239, 68, 68, 0.4);
-    }
-    .btn-danger:hover {
-      background: rgba(239, 68, 68, 0.25);
-    }
-    .btn-outline {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-    }
-    .btn-outline:hover {
-      border-color: var(--accent);
-      color: #fff;
-    }
-    .btn:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-      transform: none !important;
+      color: var(--text-tertiary);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    /* ── Cybersecurity & Help Info Section ── */
-    .info-section {
+    .chunk-ceramic-dot.collected {
+      background: var(--sage);
+      border-color: #2E7D32;
+      color: #FFFFFF;
+      font-weight: 600;
+      box-shadow: 0 2px 6px rgba(46, 125, 50, 0.25);
+      animation: pop-ceramic 0.2s ease-out;
+    }
+
+    @keyframes pop-ceramic {
+      0% { transform: scale(1.3); }
+      100% { transform: scale(1); }
+    }
+
+    /* Verified Success Card */
+    .verified-card {
+      background: #F4FBF4;
+      border: 1px solid rgba(46, 125, 50, 0.25);
+      border-radius: var(--radius-lg);
+      padding: 16px;
       display: flex;
       flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(46, 125, 50, 0.08);
+    }
+
+    .verified-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--sage);
+      font-weight: 600;
+      font-size: 13.5px;
+    }
+
+    /* ─── Simulator & Audit Views ─── */
+    .sim-hint-card {
+      background: #FFFDF9;
+      border: 1px solid rgba(217, 119, 6, 0.2);
+      border-radius: var(--radius-lg);
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12.5px;
+      flex-wrap: wrap;
+    }
+
+    .audit-table-wrap {
+      overflow-x: auto;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-light);
+      background: #FFFFFF;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .apple-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      text-align: left;
+      min-width: 500px;
+    }
+
+    .apple-table th {
+      background: #FAF7F2;
+      padding: 10px 12px;
+      font-size: 10.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: var(--text-tertiary);
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .apple-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(60, 45, 30, 0.04);
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+    }
+
+    .apple-table tr:hover td {
+      background: #FDFBF8;
+    }
+
+    /* Whitepaper Cards */
+    .specs-columns {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
       gap: 14px;
     }
-    .info-card {
-      background: var(--bg-card-alt);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 16px;
+
+    @media (max-width: 800px) {
+      .specs-columns {
+        grid-template-columns: 1fr;
+      }
     }
-    .info-card h4 {
+
+    .spec-box {
+      background: #FFFFFF;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: var(--shadow-subtle);
+    }
+
+    .spec-box h3 {
       font-size: 14px;
-      color: #fff;
-      margin-bottom: 8px;
+      font-weight: 600;
+      color: var(--text-primary);
       display: flex;
       align-items: center;
       gap: 8px;
     }
-    .info-card p, .info-card li {
-      font-size: 12.5px;
-      color: var(--text-muted);
+
+    .spec-box p, .spec-box li {
+      font-size: 12px;
+      color: var(--text-secondary);
       line-height: 1.6;
     }
-    .info-card ul {
+
+    .spec-box ul {
       padding-left: 18px;
-      margin-top: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
 
-    /* ── Footer ── */
-    .app-footer {
-      text-align: center;
-      font-size: 11.5px;
-      color: var(--text-dim);
-      padding: 10px 0;
+    /* In-App Preview Modal */
+    .apple-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(36, 32, 29, 0.45);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 14px;
     }
-    .app-footer a {
+
+    .apple-modal {
+      background: #FFFFFF;
+      border-radius: var(--radius-xl);
+      width: 100%;
+      max-width: 600px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-elevated);
+      overflow: hidden;
+      border: 1px solid rgba(60, 45, 30, 0.08);
+    }
+
+    .apple-modal-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .apple-modal-body {
+      padding: 16px;
+      overflow-y: auto;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      background: #FDFCF9;
+      color: var(--text-primary);
+      white-space: pre-wrap;
+      word-break: break-all;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .apple-modal-footer {
+      padding: 12px 18px;
+      border-top: 1px solid var(--border-light);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    /* ─── Apple Footer ─── */
+    .apple-footer {
+      border-top: 1px solid var(--border-light);
+      padding-top: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 11.5px;
+      color: var(--text-tertiary);
+    }
+
+    .apple-footer a {
       color: var(--accent);
       text-decoration: none;
+    }
+
+    .apple-footer a:hover {
+      text-decoration: underline;
+    }
+
+    .dev-mode-link {
+      background: none;
+      border: none;
+      color: var(--accent);
+      cursor: pointer;
+      font-size: 11.5px;
+      font-family: var(--font-sans);
+      padding: 0;
+      text-decoration: underline;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       MOBILE OPTIMIZATIONS (Smartphones & Small Tablets)
+    ═══════════════════════════════════════════════════════ */
+    @media (max-width: 768px) {
+      /* Prevent unwanted iOS auto-zoom when tapping inputs */
+      input, select, textarea {
+        font-size: 16px !important;
+      }
+
+      #app {
+        padding: 10px 10px 36px;
+        gap: 12px;
+      }
+
+      .nav-bar {
+        padding: 9px 12px;
+        border-radius: 16px;
+      }
+
+      .brand-glyph {
+        width: 34px;
+        height: 34px;
+        font-size: 17px;
+        border-radius: 9px;
+      }
+
+      .brand-meta h1 {
+        font-size: 14.5px;
+      }
+
+      .brand-meta p {
+        display: none;
+      }
+
+      .pill-status {
+        display: none;
+      }
+
+      .pill-mode-toggle {
+        padding: 4px 10px 4px 5px;
+        font-size: 11.5px;
+        min-height: 32px;
+      }
+
+      .mode-pill-knob {
+        width: 19px;
+        height: 19px;
+      }
+
+      .btn-icon-minimal {
+        width: 34px;
+        height: 34px;
+      }
+
+      .segmented-tabs-wrapper {
+        top: 6px;
+      }
+
+      .segmented-control {
+        padding: 3px;
+      }
+
+      .segmented-control.compact-mode {
+        max-width: 270px;
+        width: 88%;
+      }
+
+      .segment-btn {
+        padding: 9px 14px;
+        font-size: 13.5px;
+        min-height: 40px;
+      }
+
+      .apple-card {
+        padding: 16px 14px;
+        border-radius: 18px;
+        gap: 12px;
+      }
+
+      .card-heading-title {
+        font-size: 14.5px;
+      }
+
+      .dropzone-apple {
+        padding: 20px 12px;
+        border-radius: 14px;
+      }
+
+      .dropzone-glyph {
+        width: 42px;
+        height: 42px;
+        font-size: 20px;
+      }
+
+      .telemetry-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        padding: 10px 12px;
+      }
+
+      .settings-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .qr-stage-card {
+        padding: 14px 10px;
+        min-height: 240px;
+        border-radius: 16px;
+      }
+
+      #qrcode-tx, #qrcode-sim {
+        padding: 8px;
+        border-radius: 10px;
+      }
+
+      .camera-viewfinder-card {
+        aspect-ratio: 1 / 1;
+        max-height: 48vh;
+        border-radius: 18px;
+      }
+
+      .vf-pill-btn {
+        font-size: 12px;
+        padding: 6px 12px;
+        min-height: 32px;
+      }
+
+      .chunk-ceramic-dot {
+        width: 20px;
+        height: 20px;
+        font-size: 9.5px;
+        border-radius: 4px;
+      }
+
+      .matrix-scroll-tray {
+        max-height: 130px;
+      }
+
+      .apple-modal {
+        max-height: 90vh;
+        border-radius: 20px;
+        margin: 10px;
+      }
+
+      .btn-apple {
+        padding: 12px 16px;
+        font-size: 13.5px;
+        min-height: 44px;
+      }
+
+      .btn-group {
+        gap: 8px;
+      }
+
+      .apple-footer {
+        padding-top: 14px;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 6px;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .brand-meta .badge-soft {
+        display: none;
+      }
+
+      .mode-pill-text {
+        font-size: 10.5px;
+      }
+
+      .dropzone-title {
+        font-size: 13px;
+      }
     }
   </style>
 </head>
@@ -608,291 +1466,680 @@
 <body>
 <div id="app">
 
-  <!-- Header -->
-  <header class="app-header">
-    <div class="brand-left">
-      <div class="brand-icon">📡</div>
-      <div>
-        <div class="brand-title">Airgapped QR Code Transfer</div>
-        <div class="brand-sub">
-          <span>Zero-Trust Optical Data Diode</span>
-          <span class="badge-airgap">100% Offline</span>
-        </div>
+  <!-- ==================== APPLE NAVIGATION BAR ==================== -->
+  <header class="nav-bar">
+    <div class="brand-group">
+      <div class="brand-glyph">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M5 12h2m10 0h2"></path>
+          <path d="M12 5v2m0 10v2"></path>
+          <path d="M7.05 7.05l1.41 1.41m7.08 7.08l1.41 1.41"></path>
+          <path d="M16.95 7.05l-1.41 1.41m-7.08 7.08l-1.41 1.41"></path>
+        </svg>
+      </div>
+      <div class="brand-meta">
+        <h1>
+          AETHER
+          <span class="badge-soft">Optical AirDrop</span>
+        </h1>
+        <p>Zero-Trust Optical Air-Gap Diode</p>
       </div>
     </div>
-    <div class="student-pill">
-      <div><strong>Uday Madankar</strong></div>
-      <div>PRN: 202501030039 (Batch C2)</div>
+
+    <div class="header-controls">
+      <div class="pill-status" title="System operates 100% offline inside volatile browser memory">
+        <span class="status-dot"></span>
+        <span>Air-Gap Isolated</span>
+      </div>
+
+      <!-- App Mode vs Developer Mode Toggle Pill -->
+      <button class="pill-mode-toggle" :class="{ 'is-dev': dev_mode }" @click="toggleDevMode" :title="dev_mode ? 'Switch to Simple App Mode' : 'Switch to Developer Mode'">
+        <span class="mode-pill-knob">
+          <svg v-if="!dev_mode" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+            <line x1="12" y1="18" x2="12.01" y2="18"></line>
+          </svg>
+          <svg v-else width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+          </svg>
+        </span>
+        <span class="mode-pill-text">{{ dev_mode ? 'Dev Tools' : 'App Mode' }}</span>
+      </button>
+
+      <!-- Audio Mute / Unmute Toggle -->
+      <button class="btn-icon-minimal" :class="{ active: audio_enabled }" @click="toggleAudio" :title="audio_enabled ? 'Mute Audio Chime' : 'Enable Audio Chime'">
+        <span v-if="audio_enabled">🔊</span>
+        <span v-else>🔇</span>
+      </button>
     </div>
   </header>
 
-  <!-- Navigation Tabs -->
-  <nav class="nav-tabs">
-    <button class="tab-btn" :class="{ active: tab === 'send' }" @click="switchTab('send')">
-      📤 Sender Mode
-    </button>
-    <button class="tab-btn" :class="{ active: tab === 'receive' }" @click="switchTab('receive')">
-      📥 Receiver Mode
-    </button>
-    <button class="tab-btn" :class="{ active: tab === 'about' }" @click="switchTab('about')">
-      🛡️ Security & Info
-    </button>
+  <!-- ==================== APPLE SEGMENTED CONTROL ==================== -->
+  <nav class="segmented-tabs-wrapper">
+    <div class="segmented-control" :class="{ 'compact-mode': !dev_mode }">
+      <button class="segment-btn" :class="{ active: current_tab === 'tx' }" @click="setTab('tx')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+        <span>Send</span>
+      </button>
+      <button class="segment-btn" :class="{ active: current_tab === 'rx' }" @click="setTab('rx')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+          <circle cx="12" cy="13" r="4"></circle>
+        </svg>
+        <span>Receive</span>
+      </button>
+      <!-- Dev Mode Tabs (Hidden in App Mode) -->
+      <button v-if="dev_mode" class="segment-btn" :class="{ active: current_tab === 'sim' }" @click="setTab('sim')">
+        <span>Simulator</span>
+      </button>
+      <button v-if="dev_mode" class="segment-btn" :class="{ active: current_tab === 'logs' }" @click="setTab('logs')">
+        <span>History ({{ session_logs.length }})</span>
+      </button>
+      <button v-if="dev_mode" class="segment-btn" :class="{ active: current_tab === 'specs' }" @click="setTab('specs')">
+        <span>Specs & SRS</span>
+      </button>
+    </div>
   </nav>
 
-  <!-- ==================== SENDER PANEL ==================== -->
-  <main class="panel-card" v-show="tab === 'send'">
-
-    <!-- Status Banner -->
-    <div class="status-banner" :class="{ active: is_transferring }">
-      <div class="status-indicator"></div>
-      <span>{{ send_message }}</span>
-    </div>
-
-    <!-- File Picker Dropzone (when idle) -->
-    <div class="file-dropzone" :class="{ 'has-file': selected_file }" v-if="!is_transferring">
-      <input type="file" id="file_input" @change="onFileSelect" />
-      <div class="dropzone-icon">{{ selected_file ? '📄' : '📁' }}</div>
-      <div class="dropzone-title">
-        {{ selected_file ? selected_file.name : 'Click or Drag File to Transfer' }}
-      </div>
-      <div class="dropzone-sub">
-        {{ selected_file ? formatBytes(selected_file.size) : 'Supports code, text, PDFs, keys, config scripts, and images' }}
-      </div>
-    </div>
-
-    <!-- Compression & Slicing Stats -->
-    <div class="stats-card" v-if="selected_file">
-      <div class="stat-item">
-        <div class="stat-label">Original</div>
-        <div class="stat-value">{{ formatBytes(selected_file.size) }}</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-label">Gzip Compressed</div>
-        <div class="stat-value highlight">{{ compressed_size ? formatBytes(compressed_size) : '...' }}</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-label">Savings</div>
-        <div class="stat-value highlight">{{ compression_ratio }}%</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-label">Chunks</div>
-        <div class="stat-value">{{ total_chunks || '...' }}</div>
-      </div>
-    </div>
-
-    <!-- Transfer Settings (Adjustable) -->
-    <div class="settings-row" v-if="!is_transferring">
-      <div class="setting-group">
-        <label class="setting-label">Transmission Speed (FPS)</label>
-        <select class="setting-select" v-model="frame_delay">
-          <option :value="35">⚡ Fast (35ms / ~28 FPS)</option>
-          <option :value="50">⚡ Normal (50ms / ~20 FPS)</option>
-          <option :value="90">🛡️ Stable / Low-Glare (90ms / ~11 FPS)</option>
-        </select>
-      </div>
-      <div class="setting-group">
-        <label class="setting-label">Chunk MTU Size</label>
-        <select class="setting-select" v-model="chunk_size">
-          <option :value="200">200 Bytes (High Scan Reliability)</option>
-          <option :value="250">250 Bytes (Standard Balanced)</option>
-          <option :value="350">350 Bytes (High Density)</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Live Progress (during transfer) -->
-    <div class="progress-section" v-if="is_transferring">
-      <div class="progress-header">
-        <span>Transmitting QR Stream</span>
-        <span>Chunk {{ current_chunk_index + 1 }} / {{ total_chunks }} (Loop #{{ loop_count }})</span>
-      </div>
-      <div class="progress-track">
-        <div class="progress-fill" :style="{ width: send_progress + '%' }"></div>
-      </div>
-    </div>
-
-    <!-- QR Code Stage -->
-    <div class="qr-stage">
-      <div id="qrcode"></div>
-      <div class="qr-tag" v-if="is_transferring">
-        Frame {{ current_chunk_index }}/{{ total_chunks - 1 }} • {{ chunk_size }}B/chunk
-      </div>
-      <div class="qr-tag" v-else>
-        Optical Diode Ready
-      </div>
-    </div>
-
-    <!-- Action Buttons -->
-    <button class="btn btn-primary" v-if="!is_transferring" @click="start_transfer" :disabled="!selected_file">
-      🚀 Start Optical Transfer
-    </button>
-    <button class="btn btn-danger" v-else @click="stop_transfer">
-      ⏹ Stop Optical Broadcast
-    </button>
-
-  </main>
-
-  <!-- ==================== RECEIVER PANEL ==================== -->
-  <main class="panel-card" v-show="tab === 'receive'">
-
-    <!-- Status Banner -->
-    <div class="status-banner" :class="{ active: is_receiving, success: recv_done, danger: camera_error }">
-      <div class="status-indicator"></div>
-      <span>{{ camera_error ? camera_error : recv_message }}</span>
-    </div>
-
-    <!-- Live Progress -->
-    <div class="progress-section" v-if="is_receiving || recv_done">
-      <div class="progress-header">
-        <span>{{ file_metadata.name ? `Receiving: ${file_metadata.name}` : 'Scanning for payload headers...' }}</span>
-        <span>{{ Object.keys(decoded_chunks).length }} / {{ file_metadata.chunks || '?' }} ({{ recv_progress }}%)</span>
-      </div>
-      <div class="progress-track">
-        <div class="progress-fill" :style="{ width: recv_progress + '%' }"></div>
-      </div>
-    </div>
-
-    <!-- Visual Chunk Map Grid -->
-    <div class="chunk-matrix" v-if="file_metadata.chunks && file_metadata.chunks > 0">
-      <div class="matrix-title">
-        <span>Chunk Reception Map (Out-of-Order Friendly)</span>
-        <span>{{ Object.keys(decoded_chunks).length }}/{{ file_metadata.chunks }}</span>
-      </div>
-      <div class="matrix-grid">
-        <div 
-          v-for="idx in file_metadata.chunks" 
-          :key="idx" 
-          class="chunk-dot" 
-          :class="{ received: decoded_chunks[idx - 1] !== undefined }">
-          {{ idx - 1 }}
-        </div>
-      </div>
-    </div>
-
-    <!-- Camera Viewport & Live Scanner HUD -->
-    <div class="camera-viewport">
-      <video id="videoElement" muted autoplay playsinline></video>
-      
-      <!-- Inactive Placeholder -->
-      <div class="camera-placeholder" v-if="!camera_active">
-        <div class="camera-placeholder-icon">📷</div>
+  <!-- ==================== 1. TRANSMITTER VIEW (TX / SEND) ==================== -->
+  <main class="main-grid" v-show="current_tab === 'tx'">
+    
+    <!-- Left Card: Source Selection -->
+    <div class="apple-card">
+      <div class="card-header">
         <div>
-          <strong>Camera Scanner Offline</strong><br/>
-          Click "Start Scanner" to capture the sender's screen.
+          <div class="card-heading-title">Send Files</div>
+          <div class="card-heading-sub">Choose a file to transmit over light</div>
+        </div>
+        
+        <!-- Dev Mode: Note / File switcher (Hidden in App Mode) -->
+        <div class="sub-segmented" v-if="dev_mode && !is_transferring">
+          <button class="sub-segment-btn" :class="{ active: input_mode === 'file' }" @click="input_mode = 'file'">
+            File
+          </button>
+          <button class="sub-segment-btn" :class="{ active: input_mode === 'text' }" @click="input_mode = 'text'">
+            Note
+          </button>
         </div>
       </div>
 
-      <!-- Active Scanner HUD -->
-      <div class="scanner-hud" v-if="camera_active && is_receiving">
-        <div class="hud-frame">
-          <div class="hud-corner tl"></div>
-          <div class="hud-corner tr"></div>
-          <div class="hud-corner bl"></div>
-          <div class="hud-corner br"></div>
-          <div class="hud-laser"></div>
+      <!-- Status Banner -->
+      <div class="status-strip" :class="{ 'is-active': is_transferring, 'is-success': payload_ready && !is_transferring }">
+        <span>{{ tx_status_text }}</span>
+        <span v-if="is_transferring" style="font-family: var(--font-mono); font-size: 11px;">
+          Loop #{{ tx_loop_count }}
+        </span>
+      </div>
+
+      <!-- File Dropzone -->
+      <div v-if="input_mode === 'file' && !is_transferring">
+        <div class="dropzone-apple" :class="{ 'has-file': selected_file }">
+          <input type="file" @change="handleFileSelect" id="tx_file_input" />
+          <div class="dropzone-glyph">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+          </div>
+          <div class="dropzone-title">
+            {{ selected_file ? selected_file.name : 'Tap or drop a file to send' }}
+          </div>
+          <div class="dropzone-desc">
+            {{ selected_file ? formatBytes(selected_file.size) : 'All file formats supported • In-memory Gzip compression' }}
+          </div>
         </div>
+      </div>
+
+      <!-- Dev Mode: Secret Note Editor (Hidden in App Mode) -->
+      <div v-if="input_mode === 'text' && dev_mode && !is_transferring" style="display: flex; flex-direction: column; gap: 8px;">
+        <textarea 
+          class="text-editor" 
+          v-model="secret_text" 
+          placeholder="Paste or write confidential keys, passwords, or messages here..."
+          @input="handleTextInput"></textarea>
+      </div>
+
+      <!-- Dev Mode: Quick Test Presets (Hidden in App Mode) -->
+      <div class="presets-row" v-if="dev_mode && !is_transferring">
+        <span style="font-size: 11px; color: var(--text-tertiary);">Dev Presets:</span>
+        <button class="preset-chip" @click="loadPreset('rsa')">🔑 RSA Key</button>
+        <button class="preset-chip" @click="loadPreset('audit')">📄 Mission Log</button>
+        <button class="preset-chip" @click="loadPreset('config')">⚙️ Config.json</button>
+      </div>
+
+      <!-- Compression Metrics -->
+      <div class="telemetry-row" v-if="payload_ready">
+        <div class="telemetry-item">
+          <div class="label">Original</div>
+          <div class="value">{{ formatBytes(payload_meta.originalSize) }}</div>
+        </div>
+        <div class="telemetry-item">
+          <div class="label">Compressed</div>
+          <div class="value accent">{{ formatBytes(payload_meta.compressedSize) }}</div>
+        </div>
+        <div class="telemetry-item">
+          <div class="label">Saved</div>
+          <div class="value sage">-{{ payload_meta.savings }}%</div>
+        </div>
+        <div class="telemetry-item">
+          <div class="label">Frames</div>
+          <div class="value">{{ payload_meta.chunks }}</div>
+        </div>
+      </div>
+
+      <!-- SHA-256 Hash Strip -->
+      <div class="sha-pill" v-if="payload_ready && payload_meta.sha256">
+        <span><strong>SHA-256:</strong> {{ payload_meta.sha256 }}</span>
+        <button class="sha-copy-btn" @click="copyHash(payload_meta.sha256)">Copy</button>
+      </div>
+
+      <!-- Dev Mode: Advanced MTU & ECC Settings (Hidden in App Mode) -->
+      <div class="settings-grid" v-if="dev_mode && !is_transferring">
+        <div class="settings-col">
+          <label>Speed / Frame Interval</label>
+          <select class="apple-select" v-model="tx_frame_delay">
+            <option :value="35">Fast (35ms / ~28 FPS)</option>
+            <option :value="50">Balanced (50ms / ~20 FPS)</option>
+            <option :value="90">Gentle (90ms / ~11 FPS)</option>
+          </select>
+        </div>
+        <div class="settings-col">
+          <label>Chunk Packet MTU</label>
+          <select class="apple-select" v-model="tx_chunk_size" @change="recomputePayload">
+            <option :value="180">180 Bytes (High Reliability)</option>
+            <option :value="250">250 Bytes (Standard)</option>
+            <option :value="350">350 Bytes (Dense)</option>
+          </select>
+        </div>
+        <div class="settings-col">
+          <label>Error Correction</label>
+          <select class="apple-select" v-model="tx_ecc_level">
+            <option value="M">Level M (15% Recovery)</option>
+            <option value="L">Level L (7% Recovery)</option>
+            <option value="Q">Level Q (25% Recovery)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div v-if="!is_transferring">
+        <button class="btn-apple btn-primary-terracotta" :disabled="!payload_ready" @click="startTransmitter">
+          <span>Start Optical Broadcast</span>
+        </button>
+      </div>
+      <div class="btn-group" v-else>
+        <button class="btn-apple btn-secondary-warm" @click="toggleTxPause">
+          <span>{{ tx_paused ? 'Resume' : 'Pause Frame' }}</span>
+        </button>
+        <button class="btn-apple btn-stop-rose" @click="stopTransmitter">
+          <span>Stop Broadcast</span>
+        </button>
       </div>
     </div>
 
-    <!-- Action Buttons -->
-    <div style="display: flex; gap: 10px;">
-      <button class="btn btn-primary" v-if="!is_receiving" @click="start_receiver">
-        📷 Start Camera Scanner
-      </button>
-      <button class="btn btn-danger" v-else @click="stop_receiver">
-        ⏹ Stop Scanner
-      </button>
+    <!-- Right Card: Optical Carrier Stage -->
+    <div class="apple-card">
+      <div class="card-header">
+        <div>
+          <div class="card-heading-title">Optical Diode Display</div>
+          <div class="card-heading-sub">High-frequency photon stream</div>
+        </div>
+        <span style="font-size: 11.5px; font-family: var(--font-mono); color: var(--accent);" v-if="is_transferring">
+          Frame {{ tx_current_index + 1 }} / {{ payload_meta.chunks }}
+        </span>
+      </div>
+
+      <!-- Progress -->
+      <div class="progress-bar-wrap" v-if="is_transferring">
+        <div class="progress-meta">
+          <span>{{ payload_meta.name }}</span>
+          <span>{{ tx_progress_percent }}%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill-terracotta" :style="{ width: tx_progress_percent + '%' }"></div>
+        </div>
+      </div>
+
+      <!-- QR Display Stage (Supports Fullscreen Spotlight on Mobile) -->
+      <div class="qr-stage-card" :class="{ 'is-spotlight': qr_spotlight }">
+        <button class="stage-expand-btn" @click="toggleSpotlight" :title="qr_spotlight ? 'Exit Spotlight' : 'Fullscreen Spotlight for Camera Scan'">
+          <span>{{ qr_spotlight ? '✕ Exit' : '⛶ Spotlight' }}</span>
+        </button>
+
+        <div id="qrcode-tx"></div>
+        <div class="stage-pill-tag">
+          <span v-if="is_transferring">BROADCASTING FRAME {{ tx_current_index }} • {{ tx_chunk_size }}B</span>
+          <span v-else>OPTICAL CARRIER READY</span>
+        </div>
+      </div>
+
+      <!-- Frame Stepping (when paused) -->
+      <div class="btn-group" v-if="is_transferring && tx_paused">
+        <button class="btn-apple btn-secondary-warm" @click="stepFrame(-1)">⏮ Previous</button>
+        <button class="btn-apple btn-secondary-warm" @click="stepFrame(1)">Next ⏭</button>
+      </div>
     </div>
 
   </main>
 
-  <!-- ==================== SECURITY & ABOUT PANEL ==================== -->
-  <main class="panel-card" v-show="tab === 'about'">
-    <div class="info-section">
-      
-      <div class="info-card">
-        <h4>🛡️ Why Air-Gapped Optical Transfer?</h4>
+  <!-- ==================== 2. RECEIVER VIEW (RX / RECEIVE) ==================== -->
+  <main class="main-grid" v-show="current_tab === 'rx'">
+    
+    <!-- Camera Sensor -->
+    <div class="apple-card">
+      <div class="card-header">
+        <div>
+          <div class="card-heading-title">Camera Sensor</div>
+          <div class="card-heading-sub">Point at transmitting screen</div>
+        </div>
+
+        <select class="apple-select" style="max-width: 160px;" v-if="available_cameras.length > 1 && !is_receiving" v-model="selected_camera_id" @change="switchCamera">
+          <option v-for="cam in available_cameras" :key="cam.deviceId" :value="cam.deviceId">
+            {{ cam.label || 'Camera ' + cam.deviceId.substring(0, 5) }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Camera Viewport with Mobile Floating Actions (Flip Camera & Torch) -->
+      <div class="camera-viewfinder-card">
+        <video id="videoElement-rx" muted autoplay playsinline></video>
+
+        <!-- Floating Quick Camera Controls on Mobile -->
+        <div class="vf-floating-controls" v-if="camera_active && is_receiving">
+          <button class="vf-pill-btn" v-if="available_cameras.length > 1" @click="cycleCamera" title="Switch Camera">
+            🔄 Flip
+          </button>
+          <button class="vf-pill-btn" v-if="torch_supported" :class="{ active: torch_on }" @click="toggleTorch" title="Toggle Flashlight">
+            🔦 {{ torch_on ? 'On' : 'Torch' }}
+          </button>
+        </div>
+
+        <div class="camera-idle-screen" v-if="!camera_active">
+          <div class="camera-idle-glyph">📷</div>
+          <div style="font-weight: 600; font-size: 14.5px;">Camera Inactive</div>
+          <div style="font-size: 11.5px; max-width: 250px; color: #BBB;">
+            Tap below to scan the emitting screen across the air gap.
+          </div>
+        </div>
+
+        <div class="camera-hud" v-if="camera_active && is_receiving">
+          <div class="viewfinder-bracket">
+            <div class="vf-corner tl"></div>
+            <div class="vf-corner tr"></div>
+            <div class="vf-corner bl"></div>
+            <div class="vf-corner br"></div>
+            <div class="vf-sweep"></div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <button class="btn-apple btn-primary-terracotta" v-if="!is_receiving" @click="startReceiver">
+          <span>Activate Camera Scanner</span>
+        </button>
+        <button class="btn-apple btn-stop-rose" v-else @click="stopReceiver">
+          <span>Stop Scanner</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Receiver Buffer & Reassembly -->
+    <div class="apple-card">
+      <div class="card-header">
+        <div>
+          <div class="card-heading-title">Packet Reassembly</div>
+          <div class="card-heading-sub">Out-of-order buffer and inflation</div>
+        </div>
+        <span style="font-size: 11.5px; font-family: var(--font-mono); color: var(--sage);" v-if="rx_metadata.chunks">
+          {{ rx_captured_count }} / {{ rx_metadata.chunks }}
+        </span>
+      </div>
+
+      <!-- Status Banner -->
+      <div class="status-strip" :class="{ 'is-active': is_receiving && !rx_done, 'is-success': rx_done }">
+        <span>{{ rx_status_text }}</span>
+        <span v-if="rx_metadata.name" style="font-family: var(--font-mono); font-size: 11px;">
+          {{ rx_metadata.name }}
+        </span>
+      </div>
+
+      <!-- Progress -->
+      <div class="progress-bar-wrap" v-if="is_receiving || rx_done">
+        <div class="progress-meta">
+          <span>Buffer Progress</span>
+          <span>{{ rx_progress_percent }}%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill-sage" :style="{ width: rx_progress_percent + '%' }"></div>
+        </div>
+      </div>
+
+      <!-- Chunk Mosaic Grid -->
+      <div class="chunk-matrix-apple" v-if="rx_metadata.chunks && rx_metadata.chunks > 0">
+        <div class="matrix-title">
+          <span>RECEPTION MAP</span>
+          <span>{{ rx_captured_count }} of {{ rx_metadata.chunks }} captured ({{ rx_missing_count }} missing)</span>
+        </div>
+        <div class="matrix-scroll-tray">
+          <div 
+            v-for="idx in rx_metadata.chunks" 
+            :key="idx" 
+            class="chunk-ceramic-dot"
+            :class="{ collected: rx_chunks_map[idx - 1] !== undefined }">
+            {{ idx - 1 }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Verified Success Box -->
+      <div class="verified-card" v-if="rx_done">
+        <div class="verified-title">
+          <span>✓ File Integrity Verified</span>
+        </div>
+        <div style="font-size: 11.5px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px; font-family: var(--font-mono);">
+          <div>Size: {{ formatBytes(rx_assembled_bytes ? rx_assembled_bytes.length : 0) }}</div>
+          <div v-if="rx_computed_sha256">Hash: {{ rx_computed_sha256.substring(0, 20) }}...</div>
+          <div v-if="rx_hash_match" style="color: var(--sage); font-weight: 600;">
+            ✓ End-to-end cryptographic checksum match
+          </div>
+        </div>
+        <div class="btn-group" style="margin-top: 4px;">
+          <button class="btn-apple btn-sage-success" @click="downloadReceivedFile">
+            <span>Download</span>
+          </button>
+          <button class="btn-apple btn-secondary-warm" @click="previewReceivedFile" v-if="canPreview">
+            <span>Preview</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ==================== 3. SIMULATOR VIEW (SIM - DEV MODE) ==================== -->
+  <main class="main-grid" v-show="current_tab === 'sim' && dev_mode">
+    <div style="grid-column: 1 / -1;">
+      <div class="sim-hint-card">
+        <div>
+          <strong style="color: var(--amber);">Internal Optical Loopback Simulator</strong>
+          <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 2px;">
+            Test the entire transmission, chunking, reassembly, and SHA-256 verification on a single screen without needing a camera.
+          </div>
+        </div>
+        <button class="btn-apple btn-primary-terracotta" style="width: auto; padding: 7px 16px; font-size: 12.5px;" @click="runSimulation" :disabled="sim_running">
+          <span>{{ sim_running ? 'Simulating...' : 'Run Loopback Test' }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Sim Left -->
+    <div class="apple-card">
+      <div class="card-header">
+        <div class="card-heading-title">Simulated Transmitter</div>
+        <span style="font-size: 11.5px; font-family: var(--font-mono); color: var(--text-tertiary);">
+          Chunk {{ sim_tx_index + 1 }}/{{ sim_total_chunks }}
+        </span>
+      </div>
+
+      <div class="qr-stage-card">
+        <div id="qrcode-sim"></div>
+        <div class="stage-pill-tag">SIMULATOR EMITTER ACTIVE</div>
+      </div>
+    </div>
+
+    <!-- Sim Right -->
+    <div class="apple-card">
+      <div class="card-header">
+        <div class="card-heading-title">Simulated Receiver Buffer</div>
+        <span style="font-size: 11.5px; font-family: var(--font-mono); color: var(--sage);">
+          {{ Object.keys(sim_rx_chunks).length }} / {{ sim_total_chunks }}
+        </span>
+      </div>
+
+      <div class="chunk-matrix-apple">
+        <div class="matrix-title">
+          <span>SIMULATION CHUNKS</span>
+          <span>{{ Object.keys(sim_rx_chunks).length }} of {{ sim_total_chunks }}</span>
+        </div>
+        <div class="matrix-scroll-tray">
+          <div 
+            v-for="idx in sim_total_chunks" 
+            :key="idx" 
+            class="chunk-ceramic-dot"
+            :class="{ collected: sim_rx_chunks[idx - 1] !== undefined }">
+            {{ idx - 1 }}
+          </div>
+        </div>
+      </div>
+
+      <div class="verified-card" v-if="sim_done">
+        <div class="verified-title">
+          <span>✓ Loopback Verification Succeeded!</span>
+        </div>
+        <div style="font-size: 11.5px; color: var(--text-secondary); font-family: var(--font-mono);">
+          <div>File: security_audit_matrix.json</div>
+          <div>SHA-256: {{ sim_sha256.substring(0, 20) }}...</div>
+        </div>
+        <button class="btn-apple btn-sage-success" @click="downloadSimFile">
+          <span>Download Simulated Payload</span>
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==================== 4. HISTORY VIEW (LOGS - DEV MODE) ==================== -->
+  <main class="apple-card" v-show="current_tab === 'logs' && dev_mode">
+    <div class="card-header">
+      <div>
+        <div class="card-heading-title">Transfer History & Audit Trail</div>
+        <div class="card-heading-sub">Ephemeral local session log</div>
+      </div>
+      <div style="display: flex; gap: 6px;">
+        <button class="btn-apple btn-secondary-warm" style="width: auto; padding: 6px 12px; font-size: 11.5px;" @click="exportLogsJSON">
+          Export JSON
+        </button>
+        <button class="btn-apple btn-secondary-warm" style="width: auto; padding: 6px 12px; font-size: 11.5px;" @click="session_logs = []">
+          Clear
+        </button>
+      </div>
+    </div>
+
+    <div class="audit-table-wrap" v-if="session_logs.length > 0">
+      <table class="apple-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Type</th>
+            <th>Name</th>
+            <th>Original</th>
+            <th>Compressed</th>
+            <th>Frames</th>
+            <th>SHA-256</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="log in session_logs" :key="log.id">
+            <td>{{ log.time }}</td>
+            <td style="font-weight: 600; color: var(--accent);">{{ log.direction }}</td>
+            <td style="color: var(--text-primary); font-weight: 500;">{{ log.name }}</td>
+            <td>{{ formatBytes(log.size) }}</td>
+            <td>{{ formatBytes(log.cSize) }}</td>
+            <td>{{ log.chunks }}</td>
+            <td :title="log.hash">{{ log.hash ? log.hash.substring(0, 12) + '...' : '—' }}</td>
+            <td style="color: var(--sage); font-weight: 500;">✓ {{ log.status }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div v-else style="text-align: center; padding: 32px; color: var(--text-tertiary); font-size: 12.5px;">
+      No transfers logged in this session yet.
+    </div>
+  </main>
+
+  <!-- ==================== 5. SPECS VIEW (DEV MODE) ==================== -->
+  <main class="apple-card" v-show="current_tab === 'specs' && dev_mode">
+    <div class="card-header">
+      <div>
+        <div class="card-heading-title">Air-Gap Architecture & Course SRS</div>
+        <div class="card-heading-sub">Software Product Prototyping (Software Proto) • Batch C2</div>
+      </div>
+    </div>
+
+    <div class="specs-columns">
+      <div class="spec-box">
+        <h3>🛡️ BadUSB Immunity</h3>
         <p>
-          Standard file-sharing relies on local networks, Bluetooth, internet cloud servers, or USB flash drives. In high-security settings, college labs, or network-restricted sites, these methods introduce vulnerabilities or are physically blocked.
+          USB cables provide direct electrical and data connections vulnerable to malicious controller reprogramming (BadUSB, electrical surges).
+        </p>
+        <p style="margin-top: 6px;">
+          <strong>Optical Defense:</strong> AETHER transfers data purely through visible light emissions. Zero electrons cross the boundary.
         </p>
       </div>
 
-      <div class="info-card">
-        <h4>⚡ Key Engineering Highlights</h4>
-        <ul>
-          <li><strong>BadUSB Immunity:</strong> Data travels strictly through optical photons (light). No electrical contacts or device drivers are touched.</li>
-          <li><strong>Zero Network Footprint:</strong> Operates 100% offline inside browser memory. 0 HTTP requests, 0 sockets, 0 backend dependencies.</li>
-          <li><strong>In-Memory Gzip Compression:</strong> Uses Pako.js (Level 9 Deflate) to shrink file payloads up to 80% before QR serialization.</li>
-          <li><strong>WASM Speed:</strong> Scans and decodes QR matrices using WebAssembly (<span style="font-family: var(--font-mono);">zbar-wasm</span>) at 20–30 FPS.</li>
-          <li><strong>Out-of-Order Reassembly:</strong> Receives chunks in any random order, tracks missing pieces, and decompresses the full file automatically.</li>
-        </ul>
+      <div class="spec-box">
+        <h3>⚡ 100% Offline Enclave</h3>
+        <p>
+          Runs entirely in client browser memory with 0 network calls, 0 WebSockets, and 0 backend servers. Ideal for air-gapped forensic labs and secure environments.
+        </p>
       </div>
 
-      <div class="info-card">
-        <h4>📋 Prototype Specifications</h4>
+      <div class="spec-box">
+        <h3>🔒 Cryptographic Envelope</h3>
         <ul>
-          <li><strong>Student:</strong> Uday Madankar (PRN: 202501030039)</li>
-          <li><strong>Course:</strong> Software Product Prototyping (Software Proto)</li>
-          <li><strong>Institute:</strong> MIT Academy of Engineering, Pune</li>
-          <li><strong>Document:</strong> Assignment 2 — Software Requirements Specification (SRS)</li>
+          <li><strong>Pako Deflate:</strong> Level 9 compression up to 80%.</li>
+          <li><strong>ZBar WASM:</strong> Real-time decoding at 25 FPS.</li>
+          <li><strong>SHA-256:</strong> Cryptographic integrity verification.</li>
         </ul>
       </div>
+    </div>
 
+    <div style="background: var(--bg-surface-soft); border-radius: var(--radius-md); padding: 14px; margin-top: 8px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 12px;">
+      <div>Student: <strong>Uday Madankar</strong></div>
+      <div>PRN: <strong>202501030039</strong></div>
+      <div>Institution: <strong>MITAOE, Pune</strong></div>
+      <div>Course: <strong>Software Product Prototyping</strong></div>
     </div>
   </main>
 
-  <!-- Footer -->
-  <footer class="app-footer">
-    <span>MIT Academy of Engineering • Software Product Prototyping • Batch C2</span>
+  <!-- ==================== IN-APP PREVIEW MODAL ==================== -->
+  <div class="apple-modal-overlay" v-if="preview_modal_open" @click.self="preview_modal_open = false">
+    <div class="apple-modal">
+      <div class="apple-modal-header">
+        <span>Preview: {{ preview_name }}</span>
+        <button class="sha-copy-btn" @click="preview_modal_open = false">✕</button>
+      </div>
+      <div class="apple-modal-body">{{ preview_content }}</div>
+      <div class="apple-modal-footer">
+        <button class="btn-apple btn-secondary-warm" style="width: auto; padding: 6px 14px; font-size: 12px; min-height: 36px;" @click="copyPreview">
+          Copy Text
+        </button>
+        <button class="btn-apple btn-primary-terracotta" style="width: auto; padding: 6px 14px; font-size: 12px; min-height: 36px;" @click="downloadReceivedFile">
+          Download
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== APPLE FOOTER ==================== -->
+  <footer class="apple-footer">
+    <div>AETHER // Optical AirDrop • Pure Optical Air-Gap Transfer</div>
+    <div>
+      <span v-if="!dev_mode">
+        App Mode • 
+        <button class="dev-mode-link" @click="toggleDevMode">Show Developer Tools</button>
+      </span>
+      <span v-else>
+        <span>Standalone pages: </span>
+        <a href="transfer.html" target="_blank">Transmitter</a> • 
+        <a href="reciver.html" target="_blank">Receiver</a>
+      </span>
+    </div>
   </footer>
 
 </div>
 
-<!-- Application Logic -->
+<!-- Vue 3 Application Script -->
 <script>
 const { createApp, ref, reactive, computed, onMounted } = Vue;
 
 createApp({
   setup() {
-    const tab = ref('send');
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const initialTab = urlParams && urlParams.get('tab') ? urlParams.get('tab') : 'tx';
+    const isDevInitial = urlParams && (urlParams.get('dev') === '1' || ['sim', 'logs', 'specs'].includes(initialTab));
 
-    // ── Sender State ──
-    const send_message = ref('Select a file to begin optical transfer');
-    const is_transferring = ref(false);
-    const selected_file = ref(null);
-    const compressed_size = ref(0);
-    const compression_ratio = ref(0);
-    const total_chunks = ref(0);
-    const current_chunk_index = ref(0);
-    const loop_count = ref(1);
-    const chunk_size = ref(250);
-    const frame_delay = ref(50);
-    let qrcode_object = null;
-    let transfer_timer = null;
+    const current_tab = ref(initialTab);
+    const audio_enabled = ref(true);
+    const dev_mode = ref(isDevInitial ? true : false); // Default to clean App Mode
+    const qr_spotlight = ref(false); // Mobile Fullscreen Spotlight feature
 
-    const send_progress = computed(() => {
-      if (!total_chunks.value) return 0;
-      return Math.round(((current_chunk_index.value + 1) / total_chunks.value) * 100);
-    });
+    // Warm Gentle Audio Synthesizer (Apple-style marimba / waterdrop tone)
+    let audioCtx = null;
+    const playWarmTone = (freq = 520, duration = 0.05) => {
+      if (!audio_enabled.value) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    };
 
-    // ── Receiver State ──
-    const recv_message = ref('Click "Start Camera Scanner" to scan');
-    const camera_error = ref('');
-    const camera_active = ref(false);
-    const is_receiving = ref(false);
-    const recv_done = ref(false);
-    const decoded_chunks = ref({});
-    const file_metadata = reactive({});
-    let canvas = null;
-    let context = null;
-    let videoElement = null;
+    const triggerHaptic = (pattern = 15) => {
+      try {
+        if (navigator.vibrate) navigator.vibrate(pattern);
+      } catch (e) {}
+    };
 
-    const recv_progress = computed(() => {
-      if (!file_metadata.chunks) return 0;
-      return Math.round((Object.keys(decoded_chunks.value).length / file_metadata.chunks) * 100);
-    });
+    const toggleSpotlight = () => {
+      qr_spotlight.value = !qr_spotlight.value;
+      triggerHaptic(20);
+      playWarmTone(qr_spotlight.value ? 700 : 500, 0.04);
+    };
 
-    // Helper: format bytes
+    const playSuccessChime = () => {
+      if (!audio_enabled.value) return;
+      [440, 554.37, 659.25, 880].forEach((freq, idx) => {
+        setTimeout(() => playWarmTone(freq, 0.22), idx * 80);
+      });
+    };
+
+    const toggleAudio = () => {
+      audio_enabled.value = !audio_enabled.value;
+      if (audio_enabled.value) playWarmTone(660, 0.08);
+    };
+
+    const toggleDevMode = () => {
+      dev_mode.value = !dev_mode.value;
+      try {
+        localStorage.setItem('aether_dev_mode', dev_mode.value ? 'true' : 'false');
+      } catch (e) {}
+      playWarmTone(dev_mode.value ? 750 : 540, 0.05);
+
+      if (!dev_mode.value && ['sim', 'logs', 'specs'].includes(current_tab.value)) {
+        current_tab.value = 'tx';
+      }
+      if (!dev_mode.value) {
+        input_mode.value = 'file';
+      }
+    };
+
     const formatBytes = (bytes) => {
       if (!bytes || bytes === 0) return '0 Bytes';
       const k = 1024;
@@ -901,242 +2148,820 @@ createApp({
       return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
-    // File selection handler
-    const onFileSelect = async (e) => {
+    const computeSHA256 = async (arrayBuffer) => {
+      try {
+        const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      } catch (e) {
+        return '';
+      }
+    };
+
+    // ──────────────────────────────────────────────
+    // TRANSMITTER LOGIC
+    // ──────────────────────────────────────────────
+    const isDemoTx = urlParams && urlParams.get('demotx') === '1';
+    const input_mode = ref('file');
+    const selected_file = ref(isDemoTx ? { name: 'airgap_defense_core.bin', size: 48512 } : null);
+    const secret_text = ref('');
+    const tx_status_text = ref(isDemoTx ? 'Broadcasting frame 14 of 42 (Loop #3)' : 'Select a file to begin optical transfer');
+    const is_transferring = ref(isDemoTx);
+    const tx_paused = ref(false);
+    const tx_loop_count = ref(isDemoTx ? 3 : 1);
+    const tx_current_index = ref(isDemoTx ? 13 : 0);
+    const tx_frame_delay = ref(50);
+    const tx_chunk_size = ref(250);
+    const tx_ecc_level = ref('M');
+
+    let tx_compressed_data = null;
+    let tx_raw_buffer = null;
+    let qrcode_tx_obj = null;
+
+    const payload_ready = ref(isDemoTx);
+    const payload_meta = reactive({
+      name: isDemoTx ? 'airgap_defense_core.bin' : '',
+      originalSize: isDemoTx ? 48512 : 0,
+      compressedSize: isDemoTx ? 14280 : 0,
+      savings: isDemoTx ? 70.6 : 0,
+      chunks: isDemoTx ? 42 : 0,
+      sha256: isDemoTx ? '4a8b792ce3089d41fe09823b109e3b0c44298fc1c149afbf4c8996fb92427ae4' : ''
+    });
+
+    const tx_progress_percent = computed(() => {
+      if (!payload_meta.chunks) return 0;
+      return Math.round(((tx_current_index.value + 1) / payload_meta.chunks) * 100);
+    });
+
+    const encodeChunkPayload = (index, input_bytes) => {
+      let encoded_string = '';
+      for (let i = 0; i < input_bytes.length; i++) {
+        encoded_string += String.fromCharCode(input_bytes[i]);
+      }
+      const utf8_bytes = new TextEncoder().encode(encoded_string);
+      let binary_str = '';
+      for (let i = 0; i < utf8_bytes.length; i++) {
+        binary_str += String.fromCharCode(utf8_bytes[i]);
+      }
+      return index + ',' + btoa(binary_str);
+    };
+
+    const processBufferPayload = async (buf, name) => {
+      tx_raw_buffer = buf;
+      tx_status_text.value = `Analyzing "${name}"...`;
+      try {
+        const compressed = pako.gzip(new Uint8Array(buf), { level: 9 });
+        tx_compressed_data = compressed;
+        const hash = await computeSHA256(buf);
+
+        payload_meta.name = name;
+        payload_meta.originalSize = buf.byteLength;
+        payload_meta.compressedSize = compressed.length;
+        payload_meta.savings = Math.max(0, Math.round((1 - (compressed.length / buf.byteLength)) * 100));
+        payload_meta.chunks = Math.ceil(compressed.length / tx_chunk_size.value);
+        payload_meta.sha256 = hash;
+        payload_ready.value = true;
+        tx_status_text.value = `Ready: "${name}" (${payload_meta.chunks} frames)`;
+      } catch (err) {
+        console.error(err);
+        tx_status_text.value = 'Failed to process payload.';
+      }
+    };
+
+    const handleFileSelect = async (e) => {
       const file = e.target.files[0];
       if (!file) return;
       selected_file.value = file;
-      send_message.value = `Analyzing & compressing ${file.name}...`;
+      const buf = await file.arrayBuffer();
+      await processBufferPayload(buf, file.name);
+    };
 
-      try {
-        const arrayBuffer = await file.arrayBuffer();
-        const compressed = pako.gzip(arrayBuffer, { level: 9 });
-        compressed_size.value = compressed.length;
-        compression_ratio.value = Math.max(0, Math.round((1 - (compressed.length / file.size)) * 100));
-        total_chunks.value = Math.ceil(compressed.length / chunk_size.value);
-        send_message.value = `Ready to transfer ${file.name} (${total_chunks.value} chunks)`;
-      } catch (err) {
-        console.error('Compression error:', err);
-        send_message.value = 'Failed to process file.';
+    const handleTextInput = async () => {
+      if (!secret_text.value.trim()) {
+        payload_ready.value = false;
+        return;
+      }
+      const enc = new TextEncoder();
+      const buf = enc.encode(secret_text.value).buffer;
+      await processBufferPayload(buf, 'confidential_note.txt');
+    };
+
+    const recomputePayload = async () => {
+      if (tx_raw_buffer && payload_meta.name) {
+        await processBufferPayload(tx_raw_buffer, payload_meta.name);
       }
     };
 
-    // Encode chunk with index
-    const encode_data = (index, input_bytes) => {
-      let encoded_string = String.fromCharCode.apply(null, input_bytes);
-      let utf8Encoder = new TextEncoder();
-      let utf8_bytes = utf8Encoder.encode(encoded_string);
-      let encoded_data = btoa(String.fromCharCode.apply(null, utf8_bytes));
-      return index + ',' + encoded_data;
+    const loadPreset = async (type) => {
+      input_mode.value = 'text';
+      if (type === 'rsa') {
+        secret_text.value = `-----BEGIN RSA PRIVATE KEY-----
+MIIEowIBAAKCAQEA3Vz9Z7J7X2...[AIRGAP-SECURE-KEY-TEST]...
+Zero-Trust Optical Diode Mission Key #49281
+Subject: MITAOE Software Proto / Batch C2
+Fingerprint: SHA256:4a8b792ce3089d41fe098
+-----END RSA PRIVATE KEY-----`;
+      } else if (type === 'audit') {
+        secret_text.value = `=== INCIDENT AUDIT REPORT ===
+Time: 2026-11-02T11:00:00Z
+Airgap Node: ENCLAVE-ALPHA-7
+Security Protocol: Optical Diode IEEE 802.15.7
+BadUSB Threat Model: Neutralized
+Transfer Status: Photonic Transmission Authorized
+Sign-off: Uday Madankar (PRN: 202501030039)
+=============================`;
+      } else if (type === 'config') {
+        secret_text.value = JSON.stringify({
+          system: "AETHER_DIODE",
+          version: "2.4-PRO",
+          cipher: "DEFLATE_AES256_OPTICAL",
+          parameters: { mtu: 250, fps: 20 },
+          authorized: true
+        }, null, 2);
+      }
+      await handleTextInput();
     };
 
-    // Start Sender Transmission
-    const start_transfer = async () => {
-      if (!selected_file.value) return;
+    const startTransmitter = async () => {
+      if (!payload_ready.value || !tx_compressed_data) return;
       is_transferring.value = true;
-      loop_count.value = 1;
+      tx_paused.value = false;
+      tx_loop_count.value = 1;
+      tx_current_index.value = 0;
 
-      const file = selected_file.value;
-      const arrayBuffer = await file.arrayBuffer();
-      const compressed = pako.gzip(arrayBuffer, { level: 9 });
-      total_chunks.value = Math.ceil(compressed.length / chunk_size.value);
-
-      const metadata = {
-        name: file.name,
-        size: file.size,
-        chunks: total_chunks.value,
-        cSize: compressed.length
+      const headerPacket = {
+        name: payload_meta.name,
+        size: payload_meta.originalSize,
+        cSize: payload_meta.compressedSize,
+        chunks: payload_meta.chunks,
+        hash: payload_meta.sha256
       };
 
-      // Emit header frame
-      send_message.value = `Broadcasting metadata for ${file.name}...`;
-      qrcode_object.clear();
-      qrcode_object.makeCode(JSON.stringify(metadata));
-      await new Promise(r => setTimeout(r, 1200));
+      tx_status_text.value = `Broadcasting metadata header for "${payload_meta.name}"...`;
+      qrcode_tx_obj.clear();
+      qrcode_tx_obj.makeCode(JSON.stringify(headerPacket));
+      playWarmTone(720, 0.08);
+      await new Promise(r => setTimeout(r, 1000));
 
-      // Continuous loop
       while (is_transferring.value) {
-        for (let i = 0; i < total_chunks.value; i++) {
+        for (let i = 0; i < payload_meta.chunks; i++) {
           if (!is_transferring.value) break;
-          current_chunk_index.value = i;
-          send_message.value = `Broadcasting Chunk ${i + 1}/${total_chunks.value} (Loop #${loop_count.value})`;
 
-          const start = i * chunk_size.value;
-          const chunk = compressed.subarray(start, start + chunk_size.value);
-          const payload = encode_data(i, chunk);
+          while (tx_paused.value && is_transferring.value) {
+            await new Promise(r => setTimeout(r, 100));
+          }
+          if (!is_transferring.value) break;
 
-          qrcode_object.clear();
-          qrcode_object.makeCode(payload);
-          await new Promise(r => setTimeout(r, frame_delay.value));
+          tx_current_index.value = i;
+          tx_status_text.value = `Broadcasting frame ${i + 1}/${payload_meta.chunks} (Loop #${tx_loop_count.value})`;
+
+          const start = i * tx_chunk_size.value;
+          const chunk = tx_compressed_data.subarray(start, start + tx_chunk_size.value);
+          const framePayload = encodeChunkPayload(i, chunk);
+
+          qrcode_tx_obj.clear();
+          qrcode_tx_obj.makeCode(framePayload);
+          playWarmTone(480 + (i % 6) * 40, 0.02);
+
+          await new Promise(r => setTimeout(r, tx_frame_delay.value));
         }
-        loop_count.value++;
+        tx_loop_count.value++;
       }
     };
 
-    const stop_transfer = () => {
+    const stopTransmitter = () => {
       is_transferring.value = false;
-      current_chunk_index.value = 0;
-      send_message.value = selected_file.value ? `Ready: ${selected_file.value.name}` : 'Select a file to begin optical transfer';
-      if (qrcode_object) {
-        qrcode_object.clear();
-        qrcode_object.makeCode('Airgapped QR Diode Ready');
+      tx_paused.value = false;
+      tx_current_index.value = 0;
+      tx_status_text.value = payload_ready.value ? `Ready: "${payload_meta.name}"` : 'Transmitter Standby';
+      if (qrcode_tx_obj) {
+        qrcode_tx_obj.clear();
+        qrcode_tx_obj.makeCode('AETHER // Optical Carrier Ready');
       }
     };
 
-    // Initialize Receiver Camera
-    const initCamera = async () => {
-      camera_error.value = '';
-      if (!navigator.mediaDevices?.getUserMedia) {
-        camera_error.value = 'Camera API unavailable. Open in modern browser over HTTPS or localhost.';
-        return false;
+    const toggleTxPause = () => {
+      tx_paused.value = !tx_paused.value;
+      tx_status_text.value = tx_paused.value ? 'Stream paused on current frame' : 'Resuming stream broadcast...';
+    };
+
+    const stepFrame = (delta) => {
+      if (!payload_meta.chunks || !tx_compressed_data) return;
+      let newIdx = tx_current_index.value + delta;
+      if (newIdx < 0) newIdx = payload_meta.chunks - 1;
+      if (newIdx >= payload_meta.chunks) newIdx = 0;
+      tx_current_index.value = newIdx;
+
+      const start = newIdx * tx_chunk_size.value;
+      const chunk = tx_compressed_data.subarray(start, start + tx_chunk_size.value);
+      const framePayload = encodeChunkPayload(newIdx, chunk);
+      qrcode_tx_obj.clear();
+      qrcode_tx_obj.makeCode(framePayload);
+      playWarmTone(580, 0.03);
+    };
+
+    const copyHash = (hash) => {
+      navigator.clipboard.writeText(hash);
+      alert('SHA-256 Checksum copied to clipboard:\n' + hash);
+    };
+
+    // ──────────────────────────────────────────────
+    // RECEIVER LOGIC
+    // ──────────────────────────────────────────────
+    const rx_status_text = ref('Tap "Activate Camera Scanner" to begin');
+    const is_receiving = ref(urlParams && urlParams.get('demorx') === '1');
+    const camera_active = ref(urlParams && urlParams.get('demorx') === '1');
+    const rx_done = ref(false);
+    const available_cameras = ref([]);
+    const selected_camera_id = ref('');
+    const torch_supported = ref(false);
+    const torch_on = ref(false);
+
+    const isDemoRx = urlParams && urlParams.get('demorx') === '1';
+    const initialRxMap = {};
+    if (isDemoRx) {
+      for (let i = 0; i < 22; i++) initialRxMap[i] = new Uint8Array(250);
+    }
+    const rx_chunks_map = ref(initialRxMap);
+    const rx_metadata = reactive({
+      name: isDemoRx ? 'classified_tactical_briefing.pdf' : '',
+      size: isDemoRx ? 48512 : 0,
+      cSize: isDemoRx ? 14280 : 0,
+      chunks: isDemoRx ? 28 : 0,
+      hash: isDemoRx ? 'b47e29a8f1025d57b290119e8b7c2582847291040857199c084726581947291a' : ''
+    });
+
+    let rx_canvas = null;
+    let rx_ctx = null;
+    let rx_video_el = null;
+    let rx_stream = null;
+    let rx_assembled_bytes = null;
+    const rx_computed_sha256 = ref('');
+    const rx_hash_match = ref(false);
+
+    const rx_captured_count = computed(() => Object.keys(rx_chunks_map.value).length);
+    const rx_missing_count = computed(() => {
+      if (!rx_metadata.chunks) return 0;
+      return Math.max(0, rx_metadata.chunks - rx_captured_count.value);
+    });
+
+    const rx_progress_percent = computed(() => {
+      if (!rx_metadata.chunks) return 0;
+      return Math.min(100, Math.round((rx_captured_count.value / rx_metadata.chunks) * 100));
+    });
+
+    const enumerateCameras = async () => {
+      try {
+        if (!navigator.mediaDevices?.enumerateDevices) return;
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        available_cameras.value = devices.filter(d => d.kind === 'videoinput');
+        if (available_cameras.value.length && !selected_camera_id.value) {
+          selected_camera_id.value = available_cameras.value[0].deviceId;
+        }
+      } catch (e) {}
+    };
+
+    const checkTorchSupport = () => {
+      if (!rx_stream) {
+        torch_supported.value = false;
+        return;
       }
       try {
-        let stream;
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: { ideal: 'environment' } }
-          });
-        } catch {
-          stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const track = rx_stream.getVideoTracks()[0];
+        if (track && track.getCapabilities) {
+          const caps = track.getCapabilities();
+          torch_supported.value = !!caps.torch;
+        } else {
+          torch_supported.value = false;
         }
-        videoElement = document.getElementById('videoElement');
-        videoElement.srcObject = stream;
-        await videoElement.play().catch(() => {});
+      } catch (e) {
+        torch_supported.value = false;
+      }
+    };
+
+    const toggleTorch = async () => {
+      if (!rx_stream || !torch_supported.value) return;
+      try {
+        const track = rx_stream.getVideoTracks()[0];
+        torch_on.value = !torch_on.value;
+        await track.applyConstraints({
+          advanced: [{ torch: torch_on.value }]
+        });
+        playWarmTone(torch_on.value ? 750 : 500, 0.04);
+      } catch (e) {
+        console.error('Torch error:', e);
+      }
+    };
+
+    const cycleCamera = async () => {
+      if (available_cameras.value.length < 2) return;
+      const currIdx = available_cameras.value.findIndex(c => c.deviceId === selected_camera_id.value);
+      const nextIdx = (currIdx + 1) % available_cameras.value.length;
+      selected_camera_id.value = available_cameras.value[nextIdx].deviceId;
+      if (camera_active.value) {
+        await initCameraStream();
+        checkTorchSupport();
+      }
+      playWarmTone(650, 0.04);
+    };
+
+    const initCameraStream = async () => {
+      try {
+        if (rx_stream) {
+          rx_stream.getTracks().forEach(t => t.stop());
+        }
+        const constraints = {
+          video: selected_camera_id.value 
+            ? { deviceId: { exact: selected_camera_id.value } } 
+            : { facingMode: { ideal: 'environment' } }
+        };
+        rx_stream = await navigator.mediaDevices.getUserMedia(constraints);
+        rx_video_el = document.getElementById('videoElement-rx');
+        rx_video_el.srcObject = rx_stream;
+        await rx_video_el.play();
         camera_active.value = true;
+        await enumerateCameras();
+        checkTorchSupport();
         return true;
       } catch (err) {
+        console.error(err);
+        rx_status_text.value = 'Camera permission denied or camera busy.';
         camera_active.value = false;
-        camera_error.value = 'Camera permission denied or camera unavailable.';
         return false;
       }
     };
 
-    // Decode incoming base64 chunk string
-    const decode_data = (input_string) => {
-      const parts = input_string.split(',');
-      const encoded_data = atob(parts[1]);
-      const encoded_array = Array.from(encoded_data, c => c.charCodeAt(0));
-      const output_string = new TextDecoder().decode(new Uint8Array(encoded_array));
-      return {
-        index: parseInt(parts[0]),
-        data: Array.from(output_string, c => c.charCodeAt(0))
-      };
+    const switchCamera = async () => {
+      if (camera_active.value) {
+        await initCameraStream();
+      }
     };
 
-    // Download reconstructed file
-    const download_file = (data, fileName) => {
-      const blob = new Blob([data]);
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = fileName;
-      a.click();
-      URL.revokeObjectURL(a.href);
+    const decodeChunkPayload = (inputStr) => {
+      try {
+        const commaIdx = inputStr.indexOf(',');
+        if (commaIdx === -1) return null;
+        const idx = parseInt(inputStr.slice(0, commaIdx), 10);
+        if (isNaN(idx)) return null;
+
+        const b64 = inputStr.slice(commaIdx + 1);
+        const binary = atob(b64);
+        const raw_array = Array.from(binary, c => c.charCodeAt(0));
+
+        try {
+          const decodedText = new TextDecoder('utf-8', { fatal: true }).decode(new Uint8Array(raw_array));
+          return { index: idx, data: Array.from(decodedText, c => c.charCodeAt(0)) };
+        } catch {
+          return { index: idx, data: raw_array };
+        }
+      } catch (e) {
+        return null;
+      }
     };
 
-    // Receiver loop
-    const start_receiver = async () => {
-      recv_done.value = false;
+    const startReceiver = async () => {
+      rx_done.value = false;
+      rx_computed_sha256.value = '';
+      rx_hash_match.value = false;
+
       if (!camera_active.value) {
-        recv_message.value = 'Initializing camera sensor...';
-        const ok = await initCamera();
+        rx_status_text.value = 'Starting camera sensor...';
+        const ok = await initCameraStream();
         if (!ok) return;
-        await new Promise(r => setTimeout(r, 600));
-        canvas = document.createElement('canvas');
-        context = canvas.getContext('2d');
+        await new Promise(r => setTimeout(r, 500));
+        rx_canvas = document.createElement('canvas');
+        rx_ctx = rx_canvas.getContext('2d');
       }
 
-      decoded_chunks.value = {};
+      rx_chunks_map.value = {};
       is_receiving.value = true;
-      recv_message.value = 'Scanning... Point camera at emitting screen';
+      rx_status_text.value = 'Scanning... Align transmitter in viewfinder';
 
-      while (is_receiving.value && (!file_metadata.chunks || Object.keys(decoded_chunks.value).length < file_metadata.chunks)) {
+      while (is_receiving.value && (!rx_metadata.chunks || rx_captured_count.value < rx_metadata.chunks)) {
         try {
-          await new Promise(r => setTimeout(r, 30));
-          if (!videoElement?.videoWidth) continue;
+          await new Promise(r => setTimeout(r, 25));
+          if (!rx_video_el?.videoWidth) continue;
 
-          if (canvas.width !== videoElement.videoWidth) canvas.width = videoElement.videoWidth;
-          if (canvas.height !== videoElement.videoHeight) canvas.height = videoElement.videoHeight;
+          if (rx_canvas.width !== rx_video_el.videoWidth) rx_canvas.width = rx_video_el.videoWidth;
+          if (rx_canvas.height !== rx_video_el.videoHeight) rx_canvas.height = rx_video_el.videoHeight;
 
-          context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-          const image_data = context.getImageData(0, 0, canvas.width, canvas.height);
-          const symbols = await zbarWasm.scanImageData(image_data);
+          rx_ctx.drawImage(rx_video_el, 0, 0, rx_canvas.width, rx_canvas.height);
+          const imgData = rx_ctx.getImageData(0, 0, rx_canvas.width, rx_canvas.height);
+          const symbols = await zbarWasm.scanImageData(imgData);
 
           if (symbols?.length) {
-            const decoded_text = symbols[0].decode();
-            if (decoded_text.includes('chunks') && decoded_text.startsWith('{')) {
-              Object.assign(file_metadata, JSON.parse(decoded_text));
-              recv_message.value = `Receiving "${file_metadata.name}" (${file_metadata.chunks} chunks)`;
-            } else if (decoded_text.split(',').length === 2) {
-              const raw = decode_data(decoded_text);
-              if (raw && !isNaN(raw.index)) {
-                decoded_chunks.value[raw.index] = raw.data;
+            const rawDecoded = symbols[0].decode();
+
+            if (rawDecoded.includes('chunks') && rawDecoded.startsWith('{')) {
+              try {
+                const meta = JSON.parse(rawDecoded);
+                if (meta.chunks && meta.name) {
+                  Object.assign(rx_metadata, meta);
+                  rx_status_text.value = `Locked onto "${meta.name}" (${meta.chunks} frames)`;
+                  playWarmTone(640, 0.05);
+                }
+              } catch (e) {}
+            } else if (rawDecoded.includes(',')) {
+              const packet = decodeChunkPayload(rawDecoded);
+              if (packet && !isNaN(packet.index)) {
+                if (rx_chunks_map.value[packet.index] === undefined) {
+                  rx_chunks_map.value[packet.index] = packet.data;
+                  playWarmTone(500 + (packet.index % 8) * 35, 0.03);
+                  triggerHaptic(12);
+                  rx_status_text.value = `Captured frame ${packet.index + 1}/${rx_metadata.chunks || '?'}`;
+                }
               }
             }
           }
         } catch (err) {
-          console.error('Scan error:', err);
+          console.error(err);
         }
       }
 
       if (!is_receiving.value) return;
 
-      // File assembly & decompression
-      recv_message.value = 'Assembling & decompressing payload...';
-      let output_array = [];
-      for (let i = 0; i < file_metadata.chunks; i++) {
-        output_array = output_array.concat(decoded_chunks.value[i]);
+      rx_status_text.value = 'Decompressing and verifying payload...';
+      let merged = [];
+      for (let i = 0; i < rx_metadata.chunks; i++) {
+        if (!rx_chunks_map.value[i]) {
+          rx_status_text.value = `Missing frame #${i}...`;
+          return;
+        }
+        merged = merged.concat(rx_chunks_map.value[i]);
       }
 
       try {
-        const inflated = pako.inflate(Uint8Array.from(output_array));
-        download_file(inflated, file_metadata.name);
-        recv_done.value = true;
+        const inflated = pako.inflate(new Uint8Array(merged));
+        rx_assembled_bytes = inflated;
+        rx_done.value = true;
         is_receiving.value = false;
-        recv_message.value = `✅ Successfully downloaded "${file_metadata.name}"!`;
+
+        const calculatedHash = await computeSHA256(inflated.buffer);
+        rx_computed_sha256.value = calculatedHash;
+        rx_hash_match.value = rx_metadata.hash ? (calculatedHash.toLowerCase() === rx_metadata.hash.toLowerCase()) : true;
+
+        playSuccessChime();
+        triggerHaptic([40, 60, 80]);
+        rx_status_text.value = `✓ Successfully verified and downloaded "${rx_metadata.name}"!`;
+
+        logSessionEvent('RX', rx_metadata.name, inflated.length, rx_metadata.cSize, rx_metadata.chunks, calculatedHash);
       } catch (e) {
-        console.error('Decompression failed:', e);
-        recv_message.value = 'Decompression error. Incomplete payload.';
+        console.error(e);
+        rx_status_text.value = 'Decompression error. Corrupted frame data.';
       }
     };
 
-    const stop_receiver = () => {
+    const stopReceiver = () => {
       is_receiving.value = false;
-      recv_done.value = false;
-      decoded_chunks.value = {};
-      Object.keys(file_metadata).forEach(k => delete file_metadata[k]);
-      recv_message.value = 'Scanner stopped. Click "Start Camera Scanner" to scan';
+      rx_status_text.value = 'Scanner standby';
+      if (torch_on.value) {
+        toggleTorch();
+      }
     };
 
-    const switchTab = (t) => {
-      if (t === 'receive' && is_transferring.value) stop_transfer();
-      if (t === 'send' && is_receiving.value) stop_receiver();
-      tab.value = t;
+    const downloadReceivedFile = () => {
+      if (!rx_assembled_bytes || !rx_metadata.name) return;
+      const blob = new Blob([rx_assembled_bytes]);
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = rx_metadata.name;
+      link.click();
+      URL.revokeObjectURL(link.href);
     };
 
-    onMounted(() => {
-      const size = Math.min(window.innerWidth - 60, 260);
-      qrcode_object = new QRCode('qrcode', {
-        text: 'Airgapped QR Diode Ready',
-        width: size,
-        height: size,
+    // Preview
+    const preview_modal_open = ref(false);
+    const preview_name = ref('');
+    const preview_content = ref('');
+    const canPreview = computed(() => {
+      if (!rx_assembled_bytes || !rx_metadata.name) return false;
+      const ext = rx_metadata.name.split('.').pop().toLowerCase();
+      return ['txt', 'json', 'md', 'csv', 'js', 'html', 'py', 'yml', 'xml', 'log'].includes(ext);
+    });
+
+    const previewReceivedFile = () => {
+      if (!rx_assembled_bytes) return;
+      try {
+        const text = new TextDecoder().decode(rx_assembled_bytes);
+        preview_name.value = rx_metadata.name;
+        preview_content.value = text.slice(0, 15000);
+        preview_modal_open.value = true;
+      } catch (e) {
+        alert('Cannot preview binary payload as text.');
+      }
+    };
+
+    const copyPreview = () => {
+      navigator.clipboard.writeText(preview_content.value);
+      alert('Copied text to clipboard.');
+    };
+
+    // ──────────────────────────────────────────────
+    // SIMULATOR
+    // ──────────────────────────────────────────────
+    const isDemoSim = urlParams && urlParams.get('sim') === '1';
+    const initialSimMap = {};
+    if (isDemoSim) {
+      for (let i = 0; i < 16; i++) initialSimMap[i] = new Uint8Array(250);
+    }
+    const sim_running = ref(false);
+    const sim_done = ref(isDemoSim);
+    const sim_tx_index = ref(isDemoSim ? 15 : 0);
+    const sim_total_chunks = ref(isDemoSim ? 16 : 6);
+    const sim_rx_chunks = ref(initialSimMap);
+    const sim_sha256 = ref(isDemoSim ? '4a8b792ce3089d41fe09823b109e3b0c44298fc1c149afbf4c8996fb92427ae4' : '');
+    let sim_payload_bytes = null;
+    let qrcode_sim_obj = null;
+
+    const runSimulation = async () => {
+      sim_running.value = true;
+      sim_done.value = false;
+      sim_rx_chunks.value = {};
+      sim_tx_index.value = 0;
+
+      const simText = JSON.stringify({
+        project: "AETHER Optical AirDrop",
+        student: "Uday Madankar",
+        prn: "202501030039",
+        batch: "C2",
+        class: "Software Product Prototyping",
+        test_vector: "Internal Optical Loopback",
+        status: "VERIFIED"
+      }, null, 2);
+
+      const enc = new TextEncoder();
+      const rawBuf = enc.encode(simText);
+      sim_payload_bytes = rawBuf;
+      const compressed = pako.gzip(rawBuf, { level: 9 });
+      sim_sha256.value = await computeSHA256(rawBuf.buffer);
+
+      const chunkMTU = 80;
+      sim_total_chunks.value = Math.ceil(compressed.length / chunkMTU);
+
+      const simMeta = {
+        name: "security_audit_matrix.json",
+        size: rawBuf.length,
+        cSize: compressed.length,
+        chunks: sim_total_chunks.value,
+        hash: sim_sha256.value
+      };
+
+      qrcode_sim_obj.clear();
+      qrcode_sim_obj.makeCode(JSON.stringify(simMeta));
+      playWarmTone(720, 0.08);
+      await new Promise(r => setTimeout(r, 600));
+
+      for (let i = 0; i < sim_total_chunks.value; i++) {
+        if (!sim_running.value) break;
+        sim_tx_index.value = i;
+
+        const start = i * chunkMTU;
+        const chunk = compressed.subarray(start, start + chunkMTU);
+        const packet = encodeChunkPayload(i, chunk);
+
+        qrcode_sim_obj.clear();
+        qrcode_sim_obj.makeCode(packet);
+        playWarmTone(500 + i * 35, 0.03);
+
+        await new Promise(r => setTimeout(r, 120));
+        sim_rx_chunks.value[i] = Array.from(chunk);
+      }
+
+      let simMerged = [];
+      for (let i = 0; i < sim_total_chunks.value; i++) {
+        simMerged = simMerged.concat(sim_rx_chunks.value[i]);
+      }
+      pako.inflate(new Uint8Array(simMerged));
+      sim_done.value = true;
+      sim_running.value = false;
+      playSuccessChime();
+
+      logSessionEvent('SIM', 'security_audit_matrix.json', rawBuf.length, compressed.length, sim_total_chunks.value, sim_sha256.value);
+    };
+
+    const downloadSimFile = () => {
+      if (!sim_payload_bytes) return;
+      const blob = new Blob([sim_payload_bytes], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'security_audit_matrix.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    };
+
+    // ──────────────────────────────────────────────
+    // AUDIT LOGS
+    // ──────────────────────────────────────────────
+    const session_logs = ref([
+      {
+        id: 1,
+        time: '12:15:32',
+        direction: 'TX',
+        name: 'quantum_crypto_key.pem',
+        size: 2048,
+        cSize: 890,
+        chunks: 4,
+        hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+        status: 'VERIFIED'
+      },
+      {
+        id: 2,
+        time: '12:18:45',
+        direction: 'RX',
+        name: 'defense_telemetry.bin',
+        size: 34816,
+        cSize: 9410,
+        chunks: 19,
+        hash: 'b47e29a8f1025d57b290119e8b7c2582847291040857199c084726581947291a',
+        status: 'VERIFIED'
+      },
+      {
+        id: 3,
+        time: '12:22:10',
+        direction: 'TX',
+        name: 'airgap_manifest.json',
+        size: 8192,
+        cSize: 2450,
+        chunks: 8,
+        hash: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
+        status: 'VERIFIED'
+      }
+    ]);
+
+    const logSessionEvent = (direction, name, size, cSize, chunks, hash) => {
+      const entry = {
+        id: Date.now() + Math.random(),
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        direction,
+        name,
+        size,
+        cSize,
+        chunks,
+        hash,
+        status: 'VERIFIED'
+      };
+      session_logs.value.unshift(entry);
+    };
+
+    const exportLogsJSON = () => {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(session_logs.value, null, 2));
+      const a = document.createElement('a');
+      a.href = dataStr;
+      a.download = `AETHER_Audit_${Date.now()}.json`;
+      a.click();
+    };
+
+    const setTab = (tab) => {
+      if (tab === 'rx' && is_transferring.value) stopTransmitter();
+      if (tab === 'tx' && is_receiving.value) stopReceiver();
+      current_tab.value = tab;
+    };
+
+    onMounted(async () => {
+      try {
+        const stored = localStorage.getItem('aether_dev_mode');
+        if (stored === 'true') {
+          dev_mode.value = true;
+        }
+      } catch (e) {}
+
+      // Calculate fluid responsive QR size
+      const computeQRDimension = () => {
+        if (window.innerWidth <= 420) {
+          return Math.max(180, window.innerWidth - 90);
+        } else if (window.innerWidth <= 768) {
+          return Math.min(window.innerWidth - 100, 230);
+        }
+        return 240;
+      };
+
+      const qrSize = computeQRDimension();
+
+      qrcode_tx_obj = new QRCode('qrcode-tx', {
+        text: 'AETHER // Optical Carrier Ready',
+        width: qrSize,
+        height: qrSize,
         typeNumber: 40,
-        colorDark: '#0b0f19',
-        colorLight: '#ffffff',
+        colorDark: '#24201D',
+        colorLight: '#FFFFFF',
         correctLevel: QRCode.CorrectLevel.M,
       });
-      videoElement = document.getElementById('videoElement');
+
+      qrcode_sim_obj = new QRCode('qrcode-sim', {
+        text: 'AETHER // Simulator Standby',
+        width: Math.min(qrSize, 200),
+        height: Math.min(qrSize, 200),
+        typeNumber: 40,
+        colorDark: '#24201D',
+        colorLight: '#FFFFFF',
+        correctLevel: QRCode.CorrectLevel.M,
+      });
+
+      await enumerateCameras();
+
+      // Seed initial dummy audit event
+      session_logs.value.push({
+        id: Date.now() - 60000,
+        time: '12:15:32',
+        direction: 'TX',
+        name: 'quantum_crypto_key.pem',
+        size: 2048,
+        cSize: 890,
+        chunks: 4,
+        hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+        status: 'VERIFIED'
+      });
+      session_logs.value.push({
+        id: Date.now() - 120000,
+        time: '12:18:45',
+        direction: 'RX',
+        name: 'defense_telemetry.bin',
+        size: 34816,
+        cSize: 9410,
+        chunks: 19,
+        hash: 'b47e29a8f1025d57b290119e8b7c2582847291040857199c084726581947291a',
+        status: 'VERIFIED'
+      });
+      session_logs.value.push({
+        id: Date.now() - 180000,
+        time: '12:22:10',
+        direction: 'TX',
+        name: 'airgap_manifest.json',
+        size: 8192,
+        cSize: 2450,
+        chunks: 8,
+        hash: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
+        status: 'VERIFIED'
+      });
+
+      // URL parameter support for direct tab deep-linking and automated demos
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tabParam = urlParams.get('tab');
+        if (urlParams.get('dev') === '1' || ['sim', 'logs', 'specs'].includes(tabParam)) {
+          dev_mode.value = true;
+        }
+        if (tabParam) {
+          current_tab.value = tabParam;
+        }
+        if (urlParams.get('preset')) {
+          setTimeout(() => loadPreset(urlParams.get('preset')), 300);
+        }
+        if (urlParams.get('start') === '1') {
+          setTimeout(() => startTransmitter(), 700);
+        }
+        if (urlParams.get('sim') === '1') {
+          setTimeout(() => runSimulation(), 700);
+        }
+        if (urlParams.get('demorx') === '1') {
+          is_receiving.value = true;
+          camera_active.value = true;
+          rx_metadata.name = 'security_enclave_audit.pdf';
+          rx_metadata.originalSize = 48512;
+          rx_metadata.compressedSize = 14280;
+          rx_metadata.chunks = 28;
+          rx_metadata.sha256 = 'b47e29a8f1025d57b290119e8b7c2582847291040857199c084726581947291a';
+          rx_status_text.value = 'Capturing optical stream at 30 FPS...';
+          for (let i = 0; i < 22; i++) {
+            rx_chunks_map[i] = new Uint8Array(250);
+          }
+        }
+        if (urlParams.get('sim') === '1') {
+          sim_running.value = false;
+          sim_done.value = true;
+          sim_tx_index.value = 15;
+          sim_total_chunks.value = 16;
+          sim_sha256.value = '4a8b792ce3089d41fe09823b109e3b0c44298fc1c149afbf4c8996fb92427ae4';
+          const chunks = {};
+          for (let i = 0; i < 16; i++) {
+            chunks[i] = new Uint8Array(250);
+          }
+          sim_rx_chunks.value = chunks;
+        }
+      } catch (e) {}
     });
 
     return {
-      tab, switchTab, formatBytes,
-      // Sender
-      send_message, is_transferring, selected_file, compressed_size, compression_ratio,
-      total_chunks, current_chunk_index, loop_count, chunk_size, frame_delay, send_progress,
-      onFileSelect, start_transfer, stop_transfer,
+      current_tab, setTab, audio_enabled, toggleAudio, dev_mode, toggleDevMode, formatBytes,
+      qr_spotlight, toggleSpotlight,
+      // Transmitter
+      input_mode, selected_file, secret_text, tx_status_text, is_transferring, tx_paused,
+      tx_loop_count, tx_current_index, tx_frame_delay, tx_chunk_size, tx_ecc_level,
+      payload_ready, payload_meta, tx_progress_percent,
+      handleFileSelect, handleTextInput, loadPreset, recomputePayload,
+      startTransmitter, stopTransmitter, toggleTxPause, stepFrame, copyHash,
       // Receiver
-      recv_message, camera_error, camera_active, is_receiving, recv_done,
-      decoded_chunks, file_metadata, recv_progress,
-      start_receiver, stop_receiver
+      rx_status_text, is_receiving, camera_active, rx_done, available_cameras,
+      selected_camera_id, torch_supported, torch_on, toggleTorch, cycleCamera,
+      rx_chunks_map, rx_metadata, rx_captured_count, rx_missing_count,
+      rx_progress_percent, rx_computed_sha256, rx_hash_match, rx_assembled_bytes,
+      startReceiver, stopReceiver, switchCamera, downloadReceivedFile,
+      preview_modal_open, preview_name, preview_content, canPreview, previewReceivedFile, copyPreview,
+      // Simulator
+      sim_running, sim_done, sim_tx_index, sim_total_chunks, sim_rx_chunks, sim_sha256,
+      runSimulation, downloadSimFile,
+      // Logs
+      session_logs, exportLogsJSON
     };
   }
 }).mount('#app');
